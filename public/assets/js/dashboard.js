@@ -658,15 +658,69 @@ function deleteTaskItem(id) {
   initTasks();
 }
 
-// ── JEE 2027 Exam Countdowns ─────────────────────────────────────
-const JEE_MAINS    = '2027-01-10T00:00:00';
-const JEE_ADVANCED = '2027-05-01T00:00:00';
-// Real prep start: April 2025 (Class 11 start)
-const PREP_START = new Date('2025-04-01');
+// ── Exam Countdowns (Dynamic Settings) ───────────────────────────
+let examSettings = JSON.parse(localStorage.getItem('jt_exam_settings')) || {
+  examYear: '2027',
+  prepStart: '2025-04-01T00:00:00',
+  mainsDate: '2027-01-10T00:00:00',
+  advDate: '2027-05-01T00:00:00'
+};
+
+function updateExamSettingsUI() {
+  const formatUI = (iso) => {
+    const d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
+  };
+  const formatShort = (iso) => {
+    const d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleDateString('en-US', {month:'short', year:'numeric'});
+  };
+
+  if (document.getElementById('urgencyWarningText')) {
+    document.getElementById('urgencyWarningText').innerHTML = `⚠️ &nbsp;JEE ${examSettings.examYear} COUNTDOWN — EVERY SECOND IS IRREPLACEABLE`;
+    document.getElementById('urgencyMainsName').textContent = `JEE MAINS ${examSettings.examYear}`;
+    document.getElementById('urgencyMainsDate').textContent = formatUI(examSettings.mainsDate);
+    document.getElementById('mainsPrepStartLbl').textContent = formatShort(examSettings.prepStart);
+    document.getElementById('mainsPrepEndLbl').textContent = formatUI(examSettings.mainsDate);
+
+    document.getElementById('urgencyAdvName').textContent = `JEE ADVANCED ${examSettings.examYear}`;
+    document.getElementById('urgencyAdvDate').textContent = formatUI(examSettings.advDate);
+    document.getElementById('advPrepStartLbl').textContent = formatShort(examSettings.prepStart);
+    document.getElementById('advPrepEndLbl').textContent = formatUI(examSettings.advDate);
+  }
+}
+
+function openExamSettings() {
+  document.getElementById('setExamYear').value = examSettings.examYear;
+  document.getElementById('setPrepStart').value = examSettings.prepStart.split('T')[0];
+  document.getElementById('setMainsDate').value = examSettings.mainsDate.split('T')[0];
+  document.getElementById('setAdvDate').value = examSettings.advDate.split('T')[0];
+  openModal('examSettingsModal');
+}
+
+function saveExamSettings() {
+  const y = document.getElementById('setExamYear').value || '2027';
+  const p = document.getElementById('setPrepStart').value || '2025-04-01';
+  const m = document.getElementById('setMainsDate').value || '2027-01-10';
+  const a = document.getElementById('setAdvDate').value || '2027-05-01';
+
+  examSettings = {
+    examYear: y,
+    prepStart: p + 'T00:00:00',
+    mainsDate: m + 'T00:00:00',
+    advDate: a + 'T00:00:00'
+  };
+  localStorage.setItem('jt_exam_settings', JSON.stringify(examSettings));
+  initExamCountdowns();
+  closeModal('examSettingsModal');
+  toast('Exam dates updated!', 'success');
+}
+
+let mainsInterval, advInterval;
 
 function renderExamCd(targetISO, containerId, cdClass) {
   const el = document.getElementById(containerId);
-  if (!el) return;
+  if (!el) return null;
   function tick() {
     const diff = new Date(targetISO) - new Date();
     if (diff <= 0) {
@@ -687,7 +741,6 @@ function renderExamCd(targetISO, containerId, cdClass) {
         <span class="urgency-cd-sep">:</span>
         <div class="urgency-cd-unit urgency-secs-unit"><span class="urgency-cd-num">${String(s).padStart(2,'0')}</span><span class="urgency-cd-label">Secs</span></div>
       </div>`;
-    // Update footer day count (only from mains countdown)
     if (containerId === 'mainsCountdown') {
       const fEl = document.getElementById('urgencyDaysMain');
       if (fEl) fEl.textContent = d;
@@ -697,30 +750,33 @@ function renderExamCd(targetISO, containerId, cdClass) {
   return setInterval(tick, 1000);
 }
 
-
 function initExamCountdowns() {
-  renderExamCd(JEE_MAINS,    'mainsCountdown',    'mains-cd');
-  renderExamCd(JEE_ADVANCED, 'advancedCountdown', 'advanced-cd');
+  updateExamSettingsUI();
 
-  // Progress bars — % of time REMAINING, calculated over full prep window
-  // Window = PREP_START (Apr 1, 2025) → exam day
+  if (mainsInterval) clearInterval(mainsInterval);
+  if (advInterval) clearInterval(advInterval);
+
+  mainsInterval = renderExamCd(examSettings.mainsDate, 'mainsCountdown', 'mains-cd');
+  advInterval = renderExamCd(examSettings.advDate, 'advancedCountdown', 'advanced-cd');
+
+  const PREP_START = new Date(examSettings.prepStart);
+  
   function remainingPct(examISO) {
     const now      = new Date();
     const examDate = new Date(examISO);
-    const total    = examDate - PREP_START;           // full prep duration
-    const elapsed  = now - PREP_START;                // time already used
+    const total    = examDate - PREP_START;
+    const elapsed  = now - PREP_START;
     const remaining = Math.max(0, total - elapsed);
-    return Math.min(100, Math.max(0, Math.round(remaining / total * 100)));
+    return total > 0 ? Math.min(100, Math.max(0, Math.round(remaining / total * 100))) : 0;
   }
-  const mr = remainingPct(JEE_MAINS);
-  const ar = remainingPct(JEE_ADVANCED);
+  const mr = remainingPct(examSettings.mainsDate);
+  const ar = remainingPct(examSettings.advDate);
 
   const mbf = document.getElementById('mainsBarFill');
   const abf = document.getElementById('advancedBarFill');
   const mpp = document.getElementById('mainsPrepPct');
   const app = document.getElementById('advancedPrepPct');
 
-  // Bar fills = % time remaining (shrinks toward 0 as exam day nears)
   if (mbf) setTimeout(() => { mbf.style.width = mr + '%'; }, 300);
   if (abf) setTimeout(() => { abf.style.width = ar + '%'; }, 300);
   if (mpp) mpp.textContent = mr + '% time left';

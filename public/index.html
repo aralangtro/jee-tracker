@@ -50,9 +50,10 @@
   <!-- ══════════════════════════════════════════════════════
        JEE 2027 URGENCY COUNTDOWN — FULL WIDTH ALARM BANNER
   ══════════════════════════════════════════════════════ -->
-  <div class="urgency-banner scroll-reveal" style="margin-bottom:22px;">
+  <div class="urgency-banner scroll-reveal" style="margin-bottom:22px; position:relative;">
+    <button onclick="openExamSettings()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.1);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;color:white;display:flex;align-items:center;justify-content:center;" title="Edit Exam Dates">⚙️</button>
     <div class="urgency-top-bar">
-      <span class="urgency-warning-text">⚠️ &nbsp;JEE 2027 COUNTDOWN — EVERY SECOND IS IRREPLACEABLE</span>
+      <span class="urgency-warning-text" id="urgencyWarningText">⚠️ &nbsp;JEE 2027 COUNTDOWN — EVERY SECOND IS IRREPLACEABLE</span>
       <span class="urgency-sub-text">The clock never pauses. Your competition never sleeps.</span>
     </div>
     <div class="urgency-timers-row">
@@ -62,15 +63,15 @@
         <div class="urgency-exam-label">
           <span class="urgency-exam-icon">🎯</span>
           <div>
-            <div class="urgency-exam-name mains-name">JEE MAINS 2027</div>
-            <div class="urgency-exam-date">10 January 2027</div>
+            <div class="urgency-exam-name mains-name" id="urgencyMainsName">JEE MAINS 2027</div>
+            <div class="urgency-exam-date" id="urgencyMainsDate">10 January 2027</div>
           </div>
         </div>
         <div id="mainsCountdown"></div>
         <div class="urgency-bar-row">
-          <span class="urgency-bar-label">Apr 2025</span>
+          <span class="urgency-bar-label" id="mainsPrepStartLbl">Apr 2025</span>
           <span id="mainsPrepPct" class="urgency-pct mains-pct"></span>
-          <span class="urgency-bar-label">Jan 10, 2027</span>
+          <span class="urgency-bar-label" id="mainsPrepEndLbl">Jan 10, 2027</span>
         </div>
         <div class="urgency-prep-bar">
           <div class="urgency-prep-fill mains-prep-fill" id="mainsBarFill"></div>
@@ -84,15 +85,15 @@
         <div class="urgency-exam-label">
           <span class="urgency-exam-icon">🏆</span>
           <div>
-            <div class="urgency-exam-name adv-name">JEE ADVANCED 2027</div>
-            <div class="urgency-exam-date">1 May 2027</div>
+            <div class="urgency-exam-name adv-name" id="urgencyAdvName">JEE ADVANCED 2027</div>
+            <div class="urgency-exam-date" id="urgencyAdvDate">1 May 2027</div>
           </div>
         </div>
         <div id="advancedCountdown"></div>
         <div class="urgency-bar-row">
-          <span class="urgency-bar-label">Apr 2025</span>
+          <span class="urgency-bar-label" id="advPrepStartLbl">Apr 2025</span>
           <span id="advancedPrepPct" class="urgency-pct adv-pct"></span>
-          <span class="urgency-bar-label">May 1, 2027</span>
+          <span class="urgency-bar-label" id="advPrepEndLbl">May 1, 2027</span>
         </div>
         <div class="urgency-prep-bar">
           <div class="urgency-prep-fill adv-prep-fill" id="advancedBarFill"></div>
@@ -313,6 +314,33 @@
       <input class="form-input" id="taskDate" type="date">
     </div>
     <button class="btn btn-primary" onclick="saveTask()" style="width:100%">Add Task</button>
+  </div>
+</div>
+
+<!-- EXAM SETTINGS MODAL -->
+<div class="modal-overlay" id="examSettingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Exam Target Settings</div>
+      <button class="btn-icon" onclick="closeModal('examSettingsModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Target Exam Year</label>
+      <input class="form-input" id="setExamYear" placeholder="e.g. 2027" value="2027">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Preparation Start Date</label>
+      <input class="form-input" id="setPrepStart" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">JEE Mains Target Date</label>
+      <input class="form-input" id="setMainsDate" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">JEE Advanced Target Date</label>
+      <input class="form-input" id="setAdvDate" type="date">
+    </div>
+    <button class="btn btn-primary" onclick="saveExamSettings()" style="width:100%">Save Dates</button>
   </div>
 </div>
 

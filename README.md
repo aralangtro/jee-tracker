@@ -2,6 +2,8 @@
 
 JEE & CBSE Prep Tracker powered by your choice of AI API (OpenAI, Google Gemini, Anthropic, or NVIDIA NIM).
 
+> **📝 Note:** You can fully customize your **Target Exam Year**, **Preparation Start Date**, and exact **Exam Dates** directly from the dashboard! Just click the ⚙️ icon inside the red countdown banner.
+
 ## Getting Started
 
 Follow these instructions to get a copy of the project up and running on your local machine.
@@ -42,7 +44,7 @@ This application is designed to be a highly granular, dual-focus academic tracke
 - **AI Study Coach:** An embedded chat interface allows you to ask the AI for study strategies, schedule planning, or specific academic doubts, utilizing the exact models you configured.
 
 ### 📊 Precision & Insights
-- **Target Countdowns:** Dynamic countdowns calibrated for upcoming exam dates (e.g., April 2025 targets).
+- **Target Countdowns:** Dynamic countdowns calibrated for your specific exam dates. *Fully customizable via the dashboard settings gear.*
 - **Data Visualizations:** Visual progress bars, charts, and calendar-based heatmaps allow you to see exactly where you are lagging behind and where your strengths lie.
 
 ### Data Privacy
