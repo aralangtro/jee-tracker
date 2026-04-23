@@ -27,10 +27,23 @@ Follow these instructions to get a copy of the project up and running on your lo
    - The script will automatically install the necessary dependencies and start the local server.
    - The app will automatically open in your default browser at `http://localhost:5714`.
 
-### Usage
-- Manage your JEE syllabus tracking.
-- Track daily performance.
-- Use the AI features securely via your local server setup.
+## Features & Precision Tracking
+
+This application is designed to be a highly granular, dual-focus academic tracker, balancing the rigorous demands of **JEE (Mains & Advanced)** with **CBSE Board exams**.
+
+### 🎯 What it Tracks
+- **Dual-Curriculum Support:** Automatically separates and tracks core JEE subjects (Physics, Chemistry, Mathematics) alongside CBSE-exclusive subjects (English, Physical Education, etc.).
+- **Granular Syllabus Management:** Break down massive syllabi into micro-topics. Track your readiness on a scale from "Not Started" to "Mastered".
+- **Daily Performance & Revisions:** Log daily study hours, mock test scores, and track how many times you've revised specific topics.
+- **Smart Analytics:** The dashboard calculates precise percentage-based readiness for each subject, factoring in completed topics vs. total topics, weighting your confidence levels to give you a true statistical view of your preparation.
+
+### 🤖 AI-Powered Automation
+- **Syllabus Ingestion:** Instead of typing out topics manually, simply upload a PDF or image of your syllabus. The integrated AI Vision and Text models will instantly read the document, categorize the topics by subject, and populate your tracker automatically.
+- **AI Study Coach:** An embedded chat interface allows you to ask the AI for study strategies, schedule planning, or specific academic doubts, utilizing the exact models you configured.
+
+### 📊 Precision & Insights
+- **Target Countdowns:** Dynamic countdowns calibrated for upcoming exam dates (e.g., April 2025 targets).
+- **Data Visualizations:** Visual progress bars, charts, and calendar-based heatmaps allow you to see exactly where you are lagging behind and where your strengths lie.
 
 ### Data Privacy
 All your data and tasks are stored locally in your browser's `localStorage`. This app does not use a cloud database, so your data belongs entirely to you.
