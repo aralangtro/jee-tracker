@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard — JEE Tracker</title>
+<meta name="description" content="Your personal JEE & CBSE preparation command center">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h2>⚡ JEE Tracker</h2>
+    <p>Your Prep Command Center</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="/" class="nav-link active"><span class="icon">🏠</span><span>Dashboard</span></a>
+    <a href="/syllabus.html" class="nav-link"><span class="icon">📚</span><span>Syllabus</span></a>
+    <a href="/analytics.html" class="nav-link"><span class="icon">📊</span><span>Analytics</span></a>
+    <div class="nav-section">Tests</div>
+    <a href="/jee-tests.html" class="nav-link"><span class="icon">🎯</span><span>JEE Tests</span></a>
+    <a href="/cbse-tests.html" class="nav-link"><span class="icon">📝</span><span>CBSE Tests</span></a>
+    <div class="nav-section">Plan</div>
+    <a href="/calendar.html" class="nav-link"><span class="icon">📅</span><span>Calendar</span></a>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="theme-toggle" id="themeToggleBtn" onclick="ThemeManager.toggle()">🌙 <span>Dark Mode</span></button>
+    <div class="api-badge" onclick="openApiModal()">
+      <div class="api-dot" id="apiDot"></div><span id="apiLabel">API Key</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+    <div>
+      <h1 id="greeting">Good Morning 👋</h1>
+      <p id="dateDisplay"></p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" onclick="importData()" title="Restore from backup file" style="font-size:.75rem;padding:7px 12px;">📂 Import</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportData()" title="Download backup JSON" style="font-size:.75rem;padding:7px 12px;">💾 Backup</button>
+      <button class="btn btn-ghost btn-sm" onclick="openLogModal()">📝 Log Today's Study</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       JEE 2027 URGENCY COUNTDOWN — FULL WIDTH ALARM BANNER
+  ══════════════════════════════════════════════════════ -->
+  <div class="urgency-banner scroll-reveal" style="margin-bottom:22px;">
+    <div class="urgency-top-bar">
+      <span class="urgency-warning-text">⚠️ &nbsp;JEE 2027 COUNTDOWN — EVERY SECOND IS IRREPLACEABLE</span>
+      <span class="urgency-sub-text">The clock never pauses. Your competition never sleeps.</span>
+    </div>
+    <div class="urgency-timers-row">
+
+      <!-- MAINS -->
+      <div class="urgency-exam-block mains-block">
+        <div class="urgency-exam-label">
+          <span class="urgency-exam-icon">🎯</span>
+          <div>
+            <div class="urgency-exam-name mains-name">JEE MAINS 2027</div>
+            <div class="urgency-exam-date">10 January 2027</div>
+          </div>
+        </div>
+        <div id="mainsCountdown"></div>
+        <div class="urgency-bar-row">
+          <span class="urgency-bar-label">Apr 2025</span>
+          <span id="mainsPrepPct" class="urgency-pct mains-pct"></span>
+          <span class="urgency-bar-label">Jan 10, 2027</span>
+        </div>
+        <div class="urgency-prep-bar">
+          <div class="urgency-prep-fill mains-prep-fill" id="mainsBarFill"></div>
+        </div>
+      </div>
+
+      <div class="urgency-divider"></div>
+
+      <!-- ADVANCED -->
+      <div class="urgency-exam-block adv-block">
+        <div class="urgency-exam-label">
+          <span class="urgency-exam-icon">🏆</span>
+          <div>
+            <div class="urgency-exam-name adv-name">JEE ADVANCED 2027</div>
+            <div class="urgency-exam-date">1 May 2027</div>
+          </div>
+        </div>
+        <div id="advancedCountdown"></div>
+        <div class="urgency-bar-row">
+          <span class="urgency-bar-label">Apr 2025</span>
+          <span id="advancedPrepPct" class="urgency-pct adv-pct"></span>
+          <span class="urgency-bar-label">May 1, 2027</span>
+        </div>
+        <div class="urgency-prep-bar">
+          <div class="urgency-prep-fill adv-prep-fill" id="advancedBarFill"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="urgency-footer-msg" id="urgencyFooterMsg">
+      💀 &nbsp;You have <strong id="urgencyDaysMain">—</strong> days until JEE Mains. Stop reading this. Start studying.
+    </div>
+  </div>
+
+  <!-- DAILY THOUGHT + QUOTE -->
+  <div class="thought-card scroll-reveal" style="margin-bottom:20px;">
+    <div class="card-title">💡 DAILY THOUGHT</div>
+    <div class="thought-text" id="dailyThought">Loading...</div>
+    <div class="thought-quote" id="dailyQuote"></div>
+    <div class="thought-author" id="quoteAuthor"></div>
+  </div>
+
+  <!-- STATS ROW -->
+  <div class="grid-4" style="margin-bottom:20px;">
+    <div class="stat-card scroll-reveal delay-1" style="--accent:var(--blue)">
+      <div class="stat-value" id="statTodayHours">0h</div>
+      <div class="stat-label">Today's Study</div>
+      <div class="stat-sub" id="statTodayBreakdown"></div>
+    </div>
+    <div class="stat-card scroll-reveal delay-2" style="--accent:var(--amber)">
+      <div class="stat-value" id="statWeekHours">0h</div>
+      <div class="stat-label">This Week</div>
+      <div class="stat-sub">Last 7 days</div>
+    </div>
+    <div class="stat-card scroll-reveal delay-3" style="--accent:var(--purple)">
+      <div class="stat-value" id="statStreak">0</div>
+      <div class="stat-label">Day Streak 🔥</div>
+      <div class="stat-sub">Consecutive study days</div>
+    </div>
+    <div class="stat-card scroll-reveal delay-4" style="--accent:var(--green)">
+      <div class="stat-value" id="statSyllabus">0%</div>
+      <div class="stat-label">Syllabus Done</div>
+      <div class="stat-sub" id="statSyllabusSub"></div>
+    </div>
+  </div>
+
+  <!-- PCM PIE CHARTS -->
+  <div class="card scroll-reveal" style="margin-bottom:20px;">
+    <div class="card-title">📊 PCM SYLLABUS ANALYTICS — PROGRESS CHARTS</div>
+    <div id="pcmChartsContainer"></div>
+  </div>
+
+
+  <div class="grid-2" style="margin-bottom:20px;gap:20px;">
+    <!-- LEFT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- DAILY TASKS -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="card-title" style="margin-bottom:0">📋 TODAY'S TASKS</div>
+          <button class="btn btn-primary btn-sm" onclick="openAddTaskModal()">+ Add Task</button>
+        </div>
+        <div id="tasksList"><div style="color:var(--muted);font-size:.83rem;">No tasks yet. Add some!</div></div>
+        <div id="tasksProgress" style="margin-top:12px;"></div>
+      </div>
+
+      <!-- UPCOMING TESTS -->
+      <div class="card">
+        <div class="card-title">⏱ UPCOMING TESTS</div>
+        <div id="upcomingTests"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- 30-DAY HEATMAP -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="card-title" style="margin-bottom:0">🔥 30-DAY MOMENTUM</div>
+          <button class="btn btn-ghost btn-sm" id="analyzeBtn" onclick="runMomentumAnalysis()">🤖 Analyze</button>
+        </div>
+        <div class="heatmap" id="heatmap"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+          <span style="font-size:.65rem;color:var(--muted)">AI Rating</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="display:flex;align-items:center;gap:3px;">
+              <div style="width:11px;height:11px;border-radius:3px;background:rgba(240,82,82,.75);"></div>
+              <span style="font-size:.6rem;color:var(--muted)">&lt;30</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;">
+              <div style="width:11px;height:11px;border-radius:3px;background:rgba(251,146,60,.75);"></div>
+              <span style="font-size:.6rem;color:var(--muted)">30–60</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;">
+              <div style="width:11px;height:11px;border-radius:3px;background:rgba(234,179,8,.75);"></div>
+              <span style="font-size:.6rem;color:var(--muted)">60–80</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;">
+              <div style="width:11px;height:11px;border-radius:3px;background:rgba(16,217,138,.75);"></div>
+              <span style="font-size:.6rem;color:var(--muted)">80+</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;margin-left:4px;padding-left:6px;border-left:1px solid var(--border);">
+              <div style="width:11px;height:11px;border-radius:3px;background:rgba(91,141,238,.4);"></div>
+              <span style="font-size:.6rem;color:var(--muted)">No rating</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI MOMENTUM RESULT -->
+      <div class="card" id="momentumCard" style="display:none;">
+        <div class="card-title">🤖 AI MOMENTUM RATING</div>
+        <div id="momentumContent"></div>
+      </div>
+
+      <!-- SUBJECT PROGRESS -->
+      <div class="card">
+        <div class="card-title">📊 SUBJECT PROGRESS</div>
+        <div id="subjectProgress" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SMART STUDY LOG MODAL — Step 1: Enter session details
+═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="logModal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-title">📝 Log Today's Study Session</div>
+      <button class="btn-icon" onclick="closeModal('logModal')">✕</button>
+    </div>
+    <div id="logDate" style="font-size:.8rem;color:var(--muted);margin-bottom:16px;"></div>
+
+    <!-- SESSION ENTRIES -->
+    <div class="card-title" style="margin-bottom:10px;">📚 Study Sessions</div>
+    <div id="sessionsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+    <button class="btn btn-ghost btn-sm" onclick="addSessionRow()" style="width:100%;margin-bottom:20px;">
+      + Add Session
+    </button>
+
+    <!-- SUBJECT TOTALS (auto-computed preview) -->
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">
+      <div class="card-title" style="margin-bottom:10px;">⏱ Subject Hour Totals (auto-calculated)</div>
+      <div id="subjectTotalsPreview" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:.8rem;"></div>
+    </div>
+
+    <!-- DESCRIPTION BOX -->
+    <div class="form-group">
+      <label class="form-label">🗒 Tell the AI what you actually studied today</label>
+      <textarea class="form-textarea" id="logDescription" style="min-height:110px"
+        placeholder="e.g. Finished Electrostatics chapter — covered Gauss's Law and did 25 PYQs from NTA archive. Struggled with shell theorem problems. Also revised Organic Chemistry mechanisms for 45 mins, mainly SN1/SN2. Watched Unacademy lecture on Integration by Parts and solved 10 examples from NCERT Exemplar..."></textarea>
+    </div>
+
+    <button class="btn btn-primary" id="analyzeLogBtn" onclick="runDailyLogAnalysis()" style="width:100%">
+      🤖 Analyze & Preview with AI
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     AI ANALYSIS RESULT MODAL — Step 2: Review + Confirm
+═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="logAnalysisModal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-title">🤖 AI Analysis — Study Session Review</div>
+      <button class="btn-icon" onclick="closeModal('logAnalysisModal')">✕</button>
+    </div>
+
+    <!-- RATING BADGE -->
+    <div id="aiRatingBadge" style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:16px;border-radius:var(--radius-sm);border:2px solid transparent;"></div>
+
+    <!-- ASSESSMENT CARDS -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;" id="aiAssessmentCards"></div>
+
+    <!-- STRENGTHS & GAPS -->
+    <div class="grid-2" style="gap:10px;margin-bottom:16px;" id="aiStrengthsGaps"></div>
+
+    <!-- TOMORROW PLAN -->
+    <div id="aiTomorrowPlan" style="background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:.83rem;"></div>
+
+    <!-- STRICT VERDICT -->
+    <div id="aiStrictVerdict" style="border-radius:var(--radius-sm);padding:12px;margin-bottom:20px;font-size:.85rem;font-weight:600;font-style:italic;"></div>
+
+    <div class="grid-2" style="gap:10px;">
+      <button class="btn btn-ghost" onclick="closeModal('logAnalysisModal');openModal('logModal')">← Back & Edit</button>
+      <button class="btn btn-primary" onclick="confirmSaveStudyLog()">✅ Confirm & Save Log</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ADD TASK MODAL -->
+<div class="modal-overlay" id="addTaskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">➕ Add Task</div>
+      <button class="btn-icon" onclick="closeModal('addTaskModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Subject</label>
+      <select class="form-select" id="taskSub">
+        <option value="phy">⚡ Physics</option>
+        <option value="chem">🧪 Chemistry</option>
+        <option value="math">∑ Mathematics</option>
+        <option value="eng">📖 English</option>
+        <option value="pe">🏃 Physical Education</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Task</label>
+      <input class="form-input" id="taskTitle" placeholder="e.g. Complete Ch5 – Laws of Motion">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input class="form-input" id="taskDate" type="date">
+    </div>
+    <button class="btn btn-primary" onclick="saveTask()" style="width:100%">Add Task</button>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/syllabus-data.js"></script>
+<script src="assets/js/ai.js"></script>
+<script src="assets/js/dashboard.js"></script>
+</body>
+</html>

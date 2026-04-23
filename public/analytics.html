@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analytics — JEE Tracker</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><h2>⚡ JEE Tracker</h2><p>Your Prep Command Center</p></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="/" class="nav-link"><span class="icon">🏠</span><span>Dashboard</span></a>
+    <a href="/syllabus.html" class="nav-link"><span class="icon">📚</span><span>Syllabus</span></a>
+    <a href="/analytics.html" class="nav-link active"><span class="icon">📊</span><span>Analytics</span></a>
+    <div class="nav-section">Tests</div>
+    <a href="/jee-tests.html" class="nav-link"><span class="icon">🎯</span><span>JEE Tests</span></a>
+    <a href="/cbse-tests.html" class="nav-link"><span class="icon">📝</span><span>CBSE Tests</span></a>
+    <div class="nav-section">Plan</div>
+    <a href="/calendar.html" class="nav-link"><span class="icon">📅</span><span>Calendar</span></a>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="theme-toggle" id="themeToggleBtn" onclick="ThemeManager.toggle()">🌙 <span>Dark Mode</span></button>
+    <div class="api-badge" onclick="openApiModal()">
+      <div class="api-dot" id="apiDot"></div><span id="apiLabel">API Key</span>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <h1>📊 Analytics</h1>
+    <p>Your 30-day study performance, mock test history & subject breakdown</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="grid-4" style="margin-bottom:20px;">
+    <div class="stat-card" style="--accent:var(--blue)">
+      <div class="stat-value" id="avgDaily">0h</div>
+      <div class="stat-label">Avg Daily Study</div>
+      <div class="stat-sub">Last 30 days</div>
+    </div>
+    <div class="stat-card" style="--accent:var(--green)">
+      <div class="stat-value" id="totalHours">0h</div>
+      <div class="stat-label">Total Hours</div>
+      <div class="stat-sub">Last 30 days</div>
+    </div>
+    <div class="stat-card" style="--accent:var(--amber)">
+      <div class="stat-value" id="mockAvg">–</div>
+      <div class="stat-label">Avg Mock Score</div>
+      <div class="stat-sub" id="mockCount"></div>
+    </div>
+    <div class="stat-card" style="--accent:var(--purple)">
+      <div class="stat-value" id="bestDay">0h</div>
+      <div class="stat-label">Best Day</div>
+      <div class="stat-sub" id="bestDayDate"></div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:20px;margin-bottom:20px;">
+    <!-- HEATMAP -->
+    <div class="card">
+      <div class="card-title">🔥 30-DAY STUDY HEATMAP</div>
+      <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:5px;" id="bigHeatmap"></div>
+      <div style="margin-top:12px;display:grid;grid-template-columns:repeat(10,1fr);gap:5px;" id="heatmapLabels"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+        <span style="font-size:.65rem;color:var(--muted)">0h</span>
+        <div style="display:flex;gap:3px;">
+          <div style="width:14px;height:14px;border-radius:3px;background:#1a1a35;"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:#1e5fa6;"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:#4f8ef7;"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:#87b5ff;"></div>
+          <div style="width:14px;height:14px;border-radius:3px;background:#c9ddff;"></div>
+        </div>
+        <span style="font-size:.65rem;color:var(--muted)">10h+</span>
+      </div>
+    </div>
+
+    <!-- SUBJECT BREAKDOWN -->
+    <div class="card">
+      <div class="card-title">📊 SUBJECT TIME SPLIT (30 days)</div>
+      <div style="position:relative; width:100%; max-width:260px; height:260px; margin:0 auto;">
+        <canvas id="subjectPieChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:20px;margin-bottom:20px;">
+    <!-- DAILY HOURS CHART -->
+    <div class="card">
+      <div class="card-title">📈 DAILY STUDY HOURS</div>
+      <canvas id="dailyChart" height="180"></canvas>
+    </div>
+
+    <!-- MOCK SCORES -->
+    <div class="card">
+      <div class="card-title">🎯 MOCK TEST SCORES</div>
+      <canvas id="mockChart" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- MOCK TEST TABLE -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title">📋 TEST HISTORY</div>
+    <div id="mockTable"></div>
+  </div>
+
+  <!-- ERROR BOOK -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div class="card-title" style="margin-bottom:0">📒 ERROR BOOK (Mistake Log)</div>
+      <button class="btn btn-primary btn-sm" onclick="openErrorModal()">+ Log Mistake</button>
+    </div>
+    <div id="errorBookList"><div style="color:var(--muted);font-size:.83rem;">No mistakes logged yet. Good job (or take more tests)!</div></div>
+  </div>
+</main>
+
+<!-- ERROR BOOK MODAL -->
+<div class="modal-overlay" id="errorModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log a Mistake</div>
+      <button class="btn-icon" onclick="document.getElementById('errorModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Subject</label>
+      <select class="form-select" id="errSub">
+        <option value="phy">Physics</option>
+        <option value="chem">Chemistry</option>
+        <option value="math">Mathematics</option>
+        <option value="eng">English</option>
+        <option value="pe">Physical Education</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Topic / Concept</label>
+      <input class="form-input" id="errTopic" placeholder="e.g. Rotational Torque, Sn2 Reaction...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mistake Description & Correction</label>
+      <textarea class="form-textarea" id="errDesc" placeholder="Why did you get it wrong? What is the correct logic?"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px" onclick="saveMistake()">💾 Save Mistake</button>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/ai.js"></script>
+<script src="assets/js/analytics.js"></script>
+</body>
+</html>

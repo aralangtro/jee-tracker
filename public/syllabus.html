@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Syllabus Tracker — JEE Tracker</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+/* ── Syllabus-specific styles ── */
+.syl-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:20px;}
+.filter-group{display:flex;gap:4px;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px;}
+.filter-btn{padding:6px 14px;border-radius:7px;font-size:.78rem;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:.2s;font-family:inherit;}
+.filter-btn.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.filter-btn.active.cls11{color:#a78bfa;}
+.filter-btn.active.cls12{color:#34d399;}
+.filter-btn.active.prA{color:#ef4444;}
+.filter-btn.active.prB{color:#f59e0b;}
+.filter-btn.active.prC{color:#22d3ee;}
+.filter-btn.active.prD{color:#94a3b8;}
+.search-box{flex:1;min-width:180px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;color:var(--text);font-size:.84rem;outline:none;font-family:inherit;}
+.search-box:focus{border-color:var(--blue);}
+.search-box::placeholder{color:var(--muted);}
+
+/* ── Subject section ── */
+.subject-section{margin-bottom:16px;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;background:var(--card);}
+.subject-header{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;transition:.2s;user-select:none;}
+.subject-header:hover{background:var(--card2);}
+.subject-icon{font-size:1.3rem;}
+.subject-name{font-size:1rem;font-weight:800;flex:1;}
+.subject-stats{display:flex;gap:12px;align-items:center;}
+.sub-stat{font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:4px;}
+.subject-progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:0 20px 12px;}
+.subject-progress-fill{height:100%;border-radius:2px;transition:width .6s ease;}
+.subject-chevron{font-size:.8rem;transition:transform .3s;color:var(--muted);}
+.subject-chevron.open{transform:rotate(180deg);}
+.subject-body{display:none;padding:0 12px 12px;}
+.subject-body.open{display:block;}
+
+/* ── Priority group ── */
+.priority-group{margin-bottom:8px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);}
+.priority-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;background:var(--card2);transition:.2s;user-select:none;}
+.priority-header:hover{background:var(--border);}
+.priority-badge{font-size:.7rem;font-weight:800;padding:2px 10px;border-radius:12px;}
+.priority-pct{font-size:.72rem;color:var(--muted);margin-left:auto;}
+.priority-count{font-size:.7rem;color:var(--muted);}
+.priority-chevron{font-size:.75rem;color:var(--muted);transition:transform .3s;}
+.priority-chevron.open{transform:rotate(180deg);}
+.priority-body{display:none;padding:6px;}
+.priority-body.open{display:block;}
+
+/* ── Chapter card ── */
+.chapter-card{border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:5px;background:var(--bg2);overflow:hidden;transition:.2s;}
+.chapter-card.status-mastered{border-color:rgba(16,217,138,.3);background:rgba(16,217,138,.04);}
+.chapter-card.status-pyqs{border-color:rgba(91,141,238,.25);}
+.chapter-card.status-theory{border-color:rgba(245,158,11,.25);}
+.chapter-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;}
+.chapter-header:hover{background:rgba(255,255,255,.03);}
+.chapter-name{font-size:.85rem;font-weight:600;flex:1;color:var(--text);}
+.chapter-name.done{text-decoration:line-through;color:var(--muted);}
+.cls-badge{font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:8px;flex-shrink:0;}
+.cls-11{background:rgba(167,139,250,.15);color:#a78bfa;}
+.cls-12{background:rgba(52,211,153,.15);color:#34d399;}
+.rev-count{font-size:.7rem;color:var(--muted);flex-shrink:0;}
+.ch-chevron{font-size:.72rem;color:var(--muted);transition:transform .3s;flex-shrink:0;}
+.ch-chevron.open{transform:rotate(180deg);}
+.chapter-body{display:none;padding:12px 14px 14px;border-top:1px solid var(--border);}
+.chapter-body.open{display:block;}
+
+/* ── Status buttons ── */
+.status-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.status-btn{padding:5px 12px;border-radius:20px;font-size:.72rem;font-weight:700;cursor:pointer;border:2px solid transparent;background:var(--card2);color:var(--muted);transition:.2s;font-family:inherit;}
+.status-btn:hover{border-color:var(--border2);}
+.status-btn.active-todo{background:rgba(148,163,184,.12);color:#94a3b8;border-color:#94a3b870;}
+.status-btn.active-theory{background:rgba(245,158,11,.12);color:var(--amber);border-color:rgba(245,158,11,.4);}
+.status-btn.active-pyqs{background:rgba(91,141,238,.14);color:var(--blue);border-color:rgba(91,141,238,.4);}
+.status-btn.active-mastered{background:rgba(16,217,138,.14);color:var(--green);border-color:rgba(16,217,138,.4);}
+
+/* ── Revisions ── */
+.rev-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.rev-label{font-size:.75rem;color:var(--muted);font-weight:600;}
+.rev-controls{display:flex;align-items:center;gap:8px;}
+.rev-btn{width:26px;height:26px;border-radius:6px;background:var(--card2);border:1px solid var(--border);cursor:pointer;font-size:.9rem;font-weight:700;color:var(--text2);transition:.2s;display:flex;align-items:center;justify-content:center;}
+.rev-btn:hover{background:var(--border2);}
+.rev-num{font-size:.88rem;font-weight:800;min-width:24px;text-align:center;color:var(--text);}
+
+/* ── Topic checklist ── */
+.topics-label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.topic-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);}
+.topic-item:last-child{border-bottom:none;}
+.topic-check{width:16px;height:16px;border-radius:4px;border:2px solid var(--border2);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;transition:.2s;}
+.topic-check.checked{background:linear-gradient(135deg,var(--green),#0ea572);border-color:transparent;color:#fff;}
+.topic-text{font-size:.8rem;color:var(--text2);}
+.topic-text.done{text-decoration:line-through;color:var(--muted);}
+
+/* ── Overall progress bar ── */
+.progress-summary{display:flex;gap:12px;margin-bottom:4px;flex-wrap:wrap;}
+.prog-stat{font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:12px;}
+.prog-mst{background:rgba(16,217,138,.14);color:var(--green);}
+.prog-pyq{background:rgba(91,141,238,.14);color:var(--blue);}
+.prog-thy{background:rgba(245,158,11,.14);color:var(--amber);}
+.prog-todo{background:rgba(148,163,184,.1);color:var(--muted);}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><h2>⚡ JEE Tracker</h2><p>Your Prep Command Center</p></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="/" class="nav-link"><span class="icon">🏠</span><span>Dashboard</span></a>
+    <a href="/syllabus.html" class="nav-link active"><span class="icon">📚</span><span>Syllabus</span></a>
+    <a href="/analytics.html" class="nav-link"><span class="icon">📊</span><span>Analytics</span></a>
+    <div class="nav-section">Tests</div>
+    <a href="/jee-tests.html" class="nav-link"><span class="icon">🎯</span><span>JEE Tests</span></a>
+    <a href="/cbse-tests.html" class="nav-link"><span class="icon">📝</span><span>CBSE Tests</span></a>
+    <div class="nav-section">Plan</div>
+    <a href="/calendar.html" class="nav-link"><span class="icon">📅</span><span>Calendar</span></a>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="theme-toggle" id="themeToggleBtn" onclick="ThemeManager.toggle()">🌙 <span>Dark Mode</span></button>
+    <div class="api-badge" onclick="openApiModal()">
+      <div class="api-dot" id="apiDot"></div><span id="apiLabel">API Key</span>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1>📚 JEE Syllabus Tracker</h1>
+      <p>Class 11 & 12 — All chapters with priority, status & topic checklist</p>
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="confirmReset()">🔄 Reset All</button>
+  </div>
+
+  <!-- OVERALL STATS -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div class="progress-summary" id="overallStats"></div>
+      <div style="font-size:.82rem;font-weight:700;" id="overallPct"></div>
+    </div>
+    <div class="progress-bar" style="height:8px;border-radius:4px;"><div class="progress-fill" id="overallBar" style="width:0%;background:linear-gradient(90deg,var(--blue),var(--purple))"></div></div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="syl-filters">
+    <input class="search-box" id="searchBox" placeholder="🔍 Search chapters..." oninput="renderAll()">
+
+    <div class="filter-group" style="background:transparent; border:none; display:flex; gap:6px; flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_phy')?.scrollIntoView({behavior:'smooth'})" style="padding:4px 8px; font-size:.72rem; color:var(--blue); border:1px solid rgba(91,141,238,0.2);">🔭 Physics</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_chem')?.scrollIntoView({behavior:'smooth'})" style="padding:4px 8px; font-size:.72rem; color:var(--amber); border:1px solid rgba(245,158,11,0.2);">🧪 Chemistry</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_math')?.scrollIntoView({behavior:'smooth'})" style="padding:4px 8px; font-size:.72rem; color:var(--purple); border:1px solid rgba(167,139,250,0.2);">📐 Maths</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('syllabusRootCbse')?.scrollIntoView({behavior:'smooth'})" style="padding:4px 8px; font-size:.72rem; color:var(--text); border:1px solid rgba(255,255,255,0.2);">🏫 CBSE</button>
+    </div>
+
+    <div class="filter-group" title="Class" style="margin-left:auto;">
+      <button class="filter-btn active cls11" id="cl_both" onclick="setClass('both',this)">Both</button>
+      <button class="filter-btn" id="cl_11" onclick="setClass('11',this)">11th</button>
+      <button class="filter-btn" id="cl_12" onclick="setClass('12',this)">12th</button>
+    </div>
+
+    <div class="filter-group" title="Target">
+      <button class="filter-btn active" id="tg_main" onclick="setTarget('main',this)">JEE Main</button>
+      <button class="filter-btn" id="tg_adv" onclick="setTarget('adv',this)">JEE Adv</button>
+    </div>
+
+    <div class="filter-group" title="Status">
+      <button class="filter-btn active" id="st_all" onclick="setStatusFilter('all',this)">All</button>
+      <button class="filter-btn" id="st_todo" onclick="setStatusFilter('todo',this)">To Do</button>
+      <button class="filter-btn" id="st_theory" onclick="setStatusFilter('theory',this)">Theory</button>
+      <button class="filter-btn" id="st_pyqs" onclick="setStatusFilter('pyqs',this)">+ PYQs</button>
+      <button class="filter-btn" id="st_mastered" onclick="setStatusFilter('mastered',this)">Mastered</button>
+    </div>
+  </div>
+
+  <!-- SUBJECT SECTIONS -->
+  <div id="syllabusRoot"></div>
+  
+  <!-- CBSE SECTIONS -->
+  <div style="margin: 30px 0 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+    <h2 style="font-size:1.05rem; color:var(--text); margin:0;">🏫 CBSE Boards Subjects</h2>
+  </div>
+  <div id="syllabusRootCbse"></div>
+</main>
+
+<!-- FLOATING QUICK JUMP -->
+<div id="floatingNavContainer" style="position:fixed; bottom:24px; right:24px; z-index:100; opacity:0; pointer-events:none; transition:opacity 0.3s, transform 0.3s; transform:translateY(10px); display:flex; flex-direction:column; align-items:flex-end;">
+  
+  <div id="floatingNavMenu" style="display:none; flex-direction:column; gap:4px; background:var(--bg2); padding:10px; border-radius:var(--radius); border:1px solid var(--border); box-shadow:0 8px 30px rgba(0,0,0,0.6); margin-bottom:10px; width:max-content; align-items:stretch;">
+    <div style="font-size:0.6rem; color:var(--muted); font-weight:800; padding:2px 6px; letter-spacing:0.05em;">🚀 JEE TARGET</div>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_phy')?.scrollIntoView({behavior:'smooth'}); toggleFloatingNav();" style="padding:4px 10px; font-size:.7rem; color:var(--blue); justify-content:flex-start;">🔭 Physics</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_chem')?.scrollIntoView({behavior:'smooth'}); toggleFloatingNav();" style="padding:4px 10px; font-size:.7rem; color:var(--amber); justify-content:flex-start;">🧪 Chemistry</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_math')?.scrollIntoView({behavior:'smooth'}); toggleFloatingNav();" style="padding:4px 10px; font-size:.7rem; color:var(--purple); justify-content:flex-start;">📐 Maths</button>
+    
+    <div style="height:1px; background:var(--border); margin:6px 0;"></div>
+    
+    <div style="font-size:0.6rem; color:var(--muted); font-weight:800; padding:2px 6px; letter-spacing:0.05em;">🏫 CBSE BOARDS</div>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_cbse_phy')?.scrollIntoView({behavior:'smooth'}); toggleFloatingNav();" style="padding:4px 10px; font-size:.7rem; color:var(--blue); justify-content:flex-start;">🔭 Physics (CBSE)</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_cbse_chem')?.scrollIntoView({behavior:'smooth'}); toggleFloatingNav();" style="padding:4px 10px; font-size:.7rem; color:var(--amber); justify-content:flex-start;">🧪 Chemistry (CBSE)</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_cbse_math')?.scrollIntoView({behavior:'smooth'}); toggleFloatingNav();" style="padding:4px 10px; font-size:.7rem; color:var(--purple); justify-content:flex-start;">📐 Maths (CBSE)</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_eng')?.scrollIntoView({behavior:'smooth'}); toggleFloatingNav();" style="padding:4px 10px; font-size:.7rem; color:#06b6d4; justify-content:flex-start;">📖 English</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sec_pe')?.scrollIntoView({behavior:'smooth'}); toggleFloatingNav();" style="padding:4px 10px; font-size:.7rem; color:var(--green); justify-content:flex-start;">🏃 Phys Ed (PED)</button>
+  </div>
+
+  <button class="btn btn-primary" onclick="toggleFloatingNav()" style="width:46px; height:46px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 15px rgba(0,0,0,0.5); font-size:1.1rem; border:none;">🧭</button>
+</div>
+
+<div class="toast-container"></div>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/ai.js"></script>
+<script src="assets/js/syllabus-data.js"></script>
+<script src="assets/js/syllabus.js"></script>
+<script>
+  function toggleFloatingNav() {
+    const menu = document.getElementById('floatingNavMenu');
+    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+  }
+
+  window.addEventListener('scroll', () => {
+    const fn = document.getElementById('floatingNavContainer');
+    if (window.scrollY > 250) {
+      fn.style.opacity = '1';
+      fn.style.pointerEvents = 'auto';
+      fn.style.transform = 'translateY(0)';
+    } else {
+      fn.style.opacity = '0';
+      fn.style.pointerEvents = 'none';
+      fn.style.transform = 'translateY(10px)';
+      document.getElementById('floatingNavMenu').style.display = 'none';
+    }
+  });
+</script>
+</body>
+</html>

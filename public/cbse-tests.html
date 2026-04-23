@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CBSE Tests — JEE Tracker</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+.test-type-badge { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:800;letter-spacing:.03em; }
+.type-ut        { background:rgba(139,92,246,.15);color:var(--purple); }
+.type-half      { background:rgba(34,211,238,.15);color:var(--cyan); }
+.type-preboard  { background:rgba(245,158,11,.15);color:var(--amber); }
+.type-board     { background:rgba(16,217,138,.15);color:var(--green); }
+.type-practical { background:rgba(91,141,238,.15);color:var(--blue); }
+.subj-score-row { display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border); }
+.subj-score-row:last-child { border-bottom:none; }
+.subj-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+.subj-label { font-size:.82rem;font-weight:600;flex:1;color:var(--text); }
+.subj-input { width:70px;background:var(--input-bg);border:1px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--text);font-size:.82rem;text-align:center;outline:none; }
+.subj-input:focus { border-color:var(--blue); }
+.subj-max { font-size:.72rem;color:var(--muted); }
+.subj-pct { font-size:.75rem;font-weight:700;min-width:38px;text-align:right; }
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><h2>⚡ JEE Tracker</h2><p>Your Prep Command Center</p></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="/" class="nav-link"><span class="icon">🏠</span><span>Dashboard</span></a>
+    <a href="/syllabus.html" class="nav-link"><span class="icon">📚</span><span>Syllabus</span></a>
+    <a href="/analytics.html" class="nav-link"><span class="icon">📊</span><span>Analytics</span></a>
+    <div class="nav-section">Tests</div>
+    <a href="/jee-tests.html" class="nav-link"><span class="icon">🎯</span><span>JEE Tests</span></a>
+    <a href="/cbse-tests.html" class="nav-link active"><span class="icon">📝</span><span>CBSE Tests</span></a>
+    <div class="nav-section">Plan</div>
+    <a href="/calendar.html" class="nav-link"><span class="icon">📅</span><span>Calendar</span></a>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="theme-toggle" id="themeToggleBtn" onclick="ThemeManager.toggle()">🌙 <span>Dark Mode</span></button>
+    <div class="api-badge" onclick="openApiModal()">
+      <div class="api-dot" id="apiDot"></div><span id="apiLabel">API Key</span>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+    <div>
+      <h1>📝 CBSE Tests</h1>
+      <p>Track Unit Tests, Half Yearly, Pre-board, Board &amp; Practicals</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('addCbseModal')">+ Add Test</button>
+  </div>
+
+  <div id="conflictBanner"></div>
+
+  <!-- FILTER TABS -->
+  <div class="tabs scroll-reveal" style="margin-bottom:20px;max-width:600px;">
+    <button class="tab active" onclick="setTypeFilter('all',this)">All</button>
+    <button class="tab" onclick="setTypeFilter('ut',this)">📋 Unit Test</button>
+    <button class="tab" onclick="setTypeFilter('half',this)">📅 Half Yearly</button>
+    <button class="tab" onclick="setTypeFilter('preboard',this)">📄 Pre-board</button>
+    <button class="tab" onclick="setTypeFilter('board',this)">🎓 Board</button>
+    <button class="tab" onclick="setTypeFilter('practical',this)">🔬 Practical</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 370px;gap:20px;">
+    <div class="card scroll-reveal">
+      <div class="card-title">📋 YOUR CBSE TESTS</div>
+      <div id="cbseTestList"><div style="color:var(--muted);font-size:.83rem;">No CBSE tests added yet.</div></div>
+    </div>
+
+    <div style="position:sticky;top:20px;height:fit-content;">
+      <div class="card scroll-reveal" style="padding:0;overflow:hidden;">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+          <div class="card-title" style="margin-bottom:0">🤖 AI STUDY COACH</div>
+          <div style="font-size:.7rem;color:var(--muted)">Ask about CBSE topics, boards weightage &amp; strategy</div>
+        </div>
+        <div id="cbseChatbox"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ADD CBSE TEST MODAL -->
+<div class="modal-overlay" id="addCbseModal">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <div class="modal-title">📝 Add CBSE Test</div>
+      <button class="btn-icon" onclick="closeModal('addCbseModal')">✕</button>
+    </div>
+
+    <div class="grid-2" style="gap:12px;">
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Test Name</label>
+        <input class="form-input" id="cbseTestName" placeholder="e.g. Physics UT-1, Half Yearly 2025"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Test Date</label>
+        <input class="form-input" id="cbseTestDate" type="date"></div>
+    </div>
+
+    <!-- TEST TYPE -->
+    <div class="form-group" style="margin-top:14px;">
+      <label class="form-label">Test Type</label>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;" id="cbseTypePicker">
+        <div class="cat-opt active" data-type="ut" onclick="selectCbseType(this)" style="border:2px solid var(--purple);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;background:rgba(139,92,246,.12);">
+          <div style="font-size:1.1rem">📋</div><div style="font-size:.72rem;font-weight:700;color:var(--purple)">Unit Test</div>
+          <div style="font-size:.58rem;color:var(--muted)">20–30 marks</div>
+        </div>
+        <div class="cat-opt" data-type="half" onclick="selectCbseType(this)" style="border:2px solid var(--border);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;">
+          <div style="font-size:1.1rem">📅</div><div style="font-size:.72rem;font-weight:700;color:var(--cyan)">Half Yearly</div>
+          <div style="font-size:.58rem;color:var(--muted)">70–80 marks</div>
+        </div>
+        <div class="cat-opt" data-type="preboard" onclick="selectCbseType(this)" style="border:2px solid var(--border);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;">
+          <div style="font-size:1.1rem">📄</div><div style="font-size:.72rem;font-weight:700;color:var(--amber)">Pre-board</div>
+          <div style="font-size:.58rem;color:var(--muted)">70–80 marks</div>
+        </div>
+        <div class="cat-opt" data-type="board" onclick="selectCbseType(this)" style="border:2px solid var(--border);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;">
+          <div style="font-size:1.1rem">🎓</div><div style="font-size:.72rem;font-weight:700;color:var(--green)">Board Exam</div>
+          <div style="font-size:.58rem;color:var(--muted)">70–80 marks</div>
+        </div>
+        <div class="cat-opt" data-type="practical" onclick="selectCbseType(this)" style="border:2px solid var(--border);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;">
+          <div style="font-size:1.1rem">🔬</div><div style="font-size:.72rem;font-weight:700;color:var(--blue)">Practical</div>
+          <div style="font-size:.58rem;color:var(--muted)">30 marks</div>
+        </div>
+      </div>
+      <input type="hidden" id="cbseTestType" value="ut">
+    </div>
+
+    <!-- SUBJECT (for single-subject tests like UT) -->
+    <div class="form-group" id="cbseSingleSubjectRow">
+      <label class="form-label">Subject</label>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;" id="cbseSubjectPicker">
+        <div class="cat-opt active" data-subj="phy" onclick="selectCbseSubj(this)" style="border:2px solid var(--phy);border-radius:8px;padding:6px;cursor:pointer;text-align:center;background:rgba(245,158,11,.1);">
+          <div>⚡</div><div style="font-size:.68rem;font-weight:700;color:var(--phy)">Physics</div>
+        </div>
+        <div class="cat-opt" data-subj="chem" onclick="selectCbseSubj(this)" style="border:2px solid var(--border);border-radius:8px;padding:6px;cursor:pointer;text-align:center;">
+          <div>🧪</div><div style="font-size:.68rem;font-weight:700;color:var(--chem)">Chemistry</div>
+        </div>
+        <div class="cat-opt" data-subj="math" onclick="selectCbseSubj(this)" style="border:2px solid var(--border);border-radius:8px;padding:6px;cursor:pointer;text-align:center;">
+          <div>∑</div><div style="font-size:.68rem;font-weight:700;color:var(--math)">Maths</div>
+        </div>
+        <div class="cat-opt" data-subj="eng" onclick="selectCbseSubj(this)" style="border:2px solid var(--border);border-radius:8px;padding:6px;cursor:pointer;text-align:center;">
+          <div>📖</div><div style="font-size:.68rem;font-weight:700;color:var(--eng)">English</div>
+        </div>
+        <div class="cat-opt" data-subj="pe" onclick="selectCbseSubj(this)" style="border:2px solid var(--border);border-radius:8px;padding:6px;cursor:pointer;text-align:center;">
+          <div>🏃</div><div style="font-size:.68rem;font-weight:700;color:var(--pe)">Phys. Ed</div>
+        </div>
+      </div>
+      <input type="hidden" id="cbseSubject" value="phy">
+    </div>
+
+    <div class="form-group" id="cbseMaxRow"><label class="form-label">Max Marks</label>
+      <input class="form-input" id="cbseMaxMarks" type="number" value="30"></div>
+
+    <!-- SYLLABUS SECTION -->
+    <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;background:var(--card2);">
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em;">📖 SYLLABUS (optional — AI will analyze)</div>
+      <div class="tabs" style="margin-bottom:10px;">
+        <button class="tab active" onclick="switchCbseTab('text',this)">📝 Paste Text</button>
+        <button class="tab" onclick="switchCbseTab('file',this)">📎 Upload PDF/Image</button>
+      </div>
+      <div id="cbseTextTab">
+        <textarea class="form-textarea" id="cbseSyllabusText" style="min-height:70px" placeholder="Paste chapter names or topics..."></textarea>
+      </div>
+      <div id="cbseFileTab" style="display:none">
+        <div class="upload-zone" id="cbseDropZone" onclick="document.getElementById('cbseFileInput').click()" style="padding:18px;">
+          <div class="upload-icon" style="font-size:1.6rem;margin-bottom:6px;">📄</div>
+          <p style="font-size:.8rem;">Drop PDF/image or <span>click to browse</span></p>
+        </div>
+        <input type="file" id="cbseFileInput" accept=".pdf,.png,.jpg,.jpeg" style="display:none" onchange="onCbseFileSelected(this)">
+        <div id="cbseFileChosen" style="font-size:.78rem;color:var(--text2);margin-top:6px;"></div>
+      </div>
+      <div id="cbseSyllabusResult" style="display:none;margin-top:10px;">
+        <div id="cbseChips" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="analyzeCbseSyllabus()" id="cbseAnalyzeBtn" style="margin-top:10px;width:100%;">
+        🤖 Analyze Syllabus with AI
+      </button>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveCbseTest()" style="width:100%;margin-top:14px;">✅ Add Test</button>
+  </div>
+</div>
+
+<!-- SCORE MODAL (CBSE) -->
+<div class="modal-overlay" id="cbseScoreModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">📊 Log Test Score</div>
+      <button class="btn-icon" onclick="closeModal('cbseScoreModal')">✕</button>
+    </div>
+    <div id="cbseScoreTestName" style="font-size:.88rem;color:var(--text2);margin-bottom:4px;"></div>
+    <div id="cbseScoreTypeBadge" style="margin-bottom:16px;"></div>
+
+    <!-- Single subject score -->
+    <div id="cbseSingleScore">
+      <div class="form-group"><label class="form-label" id="cbseScoreSubjLabel">Marks Obtained</label>
+        <input class="form-input" id="cbseSingleMarks" type="number" placeholder="e.g. 27" oninput="calcCbseSingle()"></div>
+      <div class="form-group"><label class="form-label">Out of</label>
+        <input class="form-input" id="cbseSingleMax" type="number" value="30" oninput="calcCbseSingle()"></div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:.82rem;font-weight:700;">Score</span>
+        <span id="cbseSingleDisplay" style="font-size:1.4rem;font-weight:900;color:var(--green)">0 / 30</span>
+      </div>
+    </div>
+
+    <!-- Multi-subject score (Half Yearly, Pre-board, Board) -->
+    <div id="cbseMultiScore" style="display:none">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px;">Enter marks for each subject separately</div>
+      <div id="cbseSubjectScoreRows"></div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:.82rem;font-weight:700;">Total Aggregate</span>
+          <span id="cbseMultiTotal" style="font-size:1.3rem;font-weight:900;color:var(--blue)">0 / 0</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="cbseMultiBar" style="width:0%;background:linear-gradient(90deg,var(--blue),var(--purple))"></div></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveCbseScore()" style="width:100%;margin-top:16px;">💾 Save Score</button>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/ai.js"></script>
+<script src="assets/js/cbse-tests.js"></script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calendar — JEE Tracker</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+/* ── Calendar layout ────────────────────────────────────────────── */
+.cal-wrap { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+
+/* Date info banner */
+.cal-today-bar {
+  display:flex; align-items:center; gap:20px;
+  padding:16px 24px; border-bottom:1px solid var(--border);
+}
+.cal-today-box {
+  background:var(--card2); border:1px solid var(--border);
+  border-radius:12px; padding:10px 18px; text-align:center; min-width:68px;
+}
+.cal-today-box .dow  { font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
+.cal-today-box .dom  { font-size:2rem;   font-weight:900; color:var(--text); line-height:1; }
+.cal-today-info .month-year { font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:2px; }
+.cal-today-info .day-meta   { font-size:.78rem; color:var(--muted); }
+
+/* Navigation bar */
+.cal-nav {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:10px 24px; border-bottom:1px solid var(--border);
+  background:var(--card2);
+}
+.cal-nav-arrow { width:28px; height:28px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:var(--text); cursor:pointer; font-size:.9rem; display:flex;align-items:center;justify-content:center; transition:.15s; }
+.cal-nav-arrow:hover { background:var(--border); }
+.cal-nav-select { background:var(--card); border:1px solid var(--border); border-radius:7px; padding:4px 28px 4px 10px; color:var(--text); font-size:.8rem; font-weight:600; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; font-family:inherit; }
+.cal-nav-spacer { flex:1; }
+.cal-today-btn { padding:5px 14px; border-radius:7px; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:.78rem; font-weight:700; cursor:pointer; transition:.15s; font-family:inherit; }
+.cal-today-btn:hover { background:var(--border); }
+
+/* Legend */
+.cal-legend { display:flex; gap:14px; padding:8px 24px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.leg-item { display:flex; align-items:center; gap:5px; font-size:.7rem; color:var(--muted); font-weight:600; }
+.leg-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* Day names header */
+.cal-header-row {
+  display:grid; grid-template-columns:repeat(7,1fr);
+  padding:8px 24px 4px;
+}
+.cal-header-cell { text-align:center; font-size:.72rem; font-weight:800; color:var(--muted); letter-spacing:.06em; padding:4px 0; }
+
+/* Day grid */
+.cal-grid-body {
+  display:grid; grid-template-columns:repeat(7,1fr);
+  padding:0 24px 20px; gap:2px;
+}
+.cal-cell {
+  position:relative; text-align:center; padding:8px 2px 10px;
+  cursor:pointer; border-radius:8px; transition:.15s; min-height:52px;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+}
+.cal-cell:hover { background:var(--card2); }
+.cal-cell.other-month .cal-num { color:var(--border2); }
+.cal-cell.other-month { opacity:.55; }
+
+/* Day number */
+.cal-num {
+  font-size:.98rem; font-weight:700; color:var(--text);
+  width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+  border-radius:7px; transition:.15s;
+}
+.cal-cell.weekend .cal-num { color:var(--muted); }
+
+/* TODAY — subtle highlight box */
+.cal-cell.today .cal-num {
+  background:transparent;
+  border:2px solid var(--blue);
+  color:var(--blue);
+  font-weight:900;
+  box-shadow:0 0 0 3px rgba(91,141,238,.12);
+}
+
+/* Selected cell */
+.cal-cell.selected .cal-num {
+  background:var(--blue);
+  color:#fff;
+  box-shadow:0 2px 8px rgba(91,141,238,.4);
+}
+.cal-cell.today.selected .cal-num {
+  background:var(--blue);
+  color:#fff;
+  border-color:var(--blue);
+  box-shadow:0 2px 8px rgba(91,141,238,.4);
+}
+
+/* Event dots row */
+.cal-dots { display:flex; gap:3px; justify-content:center; flex-wrap:wrap; margin-top:1px; }
+.cal-dot  { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+/* Test dots — bright red */
+.cal-dot.dot-test        { background:#ef4444; box-shadow:0 0 3px #ef444466; }
+.cal-dot.dot-test-urgent { background:#ef4444; box-shadow:0 0 5px #ef4444; animation:blink .7s infinite; }
+
+/* Subject task dots */
+.cal-dot.dot-phy  { background:var(--phy); }   /* amber  — Physics   */
+.cal-dot.dot-chem { background:var(--chem); }  /* cyan   — Chemistry */
+.cal-dot.dot-math { background:var(--math); }  /* purple — Maths     */
+.cal-dot.dot-eng  { background:var(--eng); }   /* green  — English   */
+.cal-dot.dot-pe   { background:var(--pe); }    /* pink   — PE        */
+.cal-dot.dot-gen  { background:var(--muted); } /* gray   — General   */
+
+/* Day detail panel */
+.day-panel { border:1px solid var(--border); border-radius:var(--radius); background:var(--card); padding:18px 22px; margin-top:16px; }
+.day-panel-title { font-size:.95rem; font-weight:800; margin-bottom:14px; color:var(--text); }
+.day-event-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; margin-bottom:6px; background:var(--card2); border:1px solid var(--border); font-size:.82rem; }
+.day-event-icon { font-size:1rem; flex-shrink:0; }
+.day-event-name { font-weight:600; flex:1; color:var(--text); }
+.day-event-badge { font-size:.65rem; font-weight:700; padding:2px 8px; border-radius:10px; }
+.day-task-item { display:flex; align-items:center; gap:10px; padding:7px 12px; border-radius:8px; margin-bottom:5px; border:1px solid var(--border); }
+.task-cb { width:16px; height:16px; border-radius:4px; border:2px solid var(--border2); cursor:pointer; display:flex;align-items:center;justify-content:center;font-size:.65rem;flex-shrink:0;transition:.15s; }
+.task-cb.done { background:var(--green); border-color:var(--green); color:#fff; }
+.task-text { flex:1; font-size:.82rem; font-weight:500; color:var(--text2); }
+.task-text.done { text-decoration:line-through; color:var(--muted); }
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><h2>⚡ JEE Tracker</h2><p>Your Prep Command Center</p></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="/" class="nav-link"><span class="icon">🏠</span><span>Dashboard</span></a>
+    <a href="/syllabus.html" class="nav-link"><span class="icon">📚</span><span>Syllabus</span></a>
+    <a href="/analytics.html" class="nav-link"><span class="icon">📊</span><span>Analytics</span></a>
+    <div class="nav-section">Tests</div>
+    <a href="/jee-tests.html" class="nav-link"><span class="icon">🎯</span><span>JEE Tests</span></a>
+    <a href="/cbse-tests.html" class="nav-link"><span class="icon">📝</span><span>CBSE Tests</span></a>
+    <div class="nav-section">Plan</div>
+    <a href="/calendar.html" class="nav-link active"><span class="icon">📅</span><span>Calendar</span></a>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="theme-toggle" id="themeToggleBtn" onclick="ThemeManager.toggle()">🌙 <span>Dark Mode</span></button>
+    <div class="api-badge" onclick="openApiModal()">
+      <div class="api-dot" id="apiDot"></div><span id="apiLabel">API Key</span>
+    </div>
+  </div>
+</aside>
+
+<main class="main" style="max-width:1200px;">
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h1>📅 Study Calendar</h1>
+      <p>Tests, tasks and study schedule at a glance</p>
+    </div>
+  </div>
+
+  <div id="conflictBanner" style="margin-bottom:12px;"></div>
+
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;">
+
+    <!-- LEFT: Calendar -->
+    <div>
+    <div class="cal-wrap scroll-reveal">
+
+    <!-- TODAY INFO BAR -->
+    <div class="cal-today-bar">
+      <div class="cal-today-box">
+        <div class="dow" id="todayDow"></div>
+        <div class="dom" id="todayDom"></div>
+      </div>
+      <div class="cal-today-info">
+        <div class="month-year" id="todayMonthYear"></div>
+        <div class="day-meta" id="todayMeta"></div>
+        <div class="day-meta" style="color:var(--blue);font-weight:700;">Today</div>
+      </div>
+    </div>
+
+    <!-- NAVIGATION BAR -->
+    <div class="cal-nav">
+      <button class="cal-nav-arrow" onclick="changeMonth(-1)">‹</button>
+      <select class="cal-nav-select" id="monthSelect" onchange="onMonthSelect()"></select>
+      <button class="cal-nav-arrow" onclick="changeMonth(1)">›</button>
+      <select class="cal-nav-select" id="yearSelect" onchange="onYearSelect()"></select>
+      <div class="cal-nav-spacer"></div>
+      <button class="cal-today-btn" onclick="goToday()">Today</button>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="cal-legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#ef4444;box-shadow:0 0 4px #ef444499"></div> JEE/CBSE Test</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ef4444;animation:blink .7s infinite"></div> Test ≤7 days</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--phy)"></div> Physics</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--chem)"></div> Chemistry</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--math)"></div> Maths</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--eng)"></div> English</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--pe)"></div> Phys. Ed</div>
+    </div>
+
+    <!-- DAY NAMES -->
+    <div class="cal-header-row" id="calDayNames"></div>
+
+    <!-- GRID -->
+    <div class="cal-grid-body" id="calGrid"></div>
+
+  </div><!-- end cal-wrap -->
+  </div><!-- end left col -->
+
+    <!-- RIGHT: Day detail panel (always visible) -->
+    <div style="position:sticky;top:20px;">
+      <div class="day-panel" id="dayPanel" style="display:block;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="day-panel-title" id="dayPanelTitle">📅 Select a day</div>
+          <button class="btn btn-primary btn-sm" id="addTaskForDay" onclick="openAddTaskModal()" style="display:none">+ Task</button>
+        </div>
+        <div id="dayPanelContent">
+          <div style="color:var(--muted);font-size:.82rem;text-align:center;padding:24px 8px;">
+            Click any date on the calendar to see events &amp; tasks.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end grid -->
+</main>
+
+<!-- ADD TASK MODAL -->
+<div class="modal-overlay" id="addTaskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">➕ Add Task</div>
+      <button class="btn-icon" onclick="closeModal('addTaskModal')">✕</button>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px;" id="addTaskDateLabel"></div>
+    <div class="form-group"><label class="form-label">Subject</label>
+      <select class="form-select" id="taskSub">
+        <option value="phy">⚡ Physics</option>
+        <option value="chem">🧪 Chemistry</option>
+        <option value="math">∑ Mathematics</option>
+        <option value="eng">📖 English</option>
+        <option value="pe">🏃 Physical Education</option>
+        <option value="gen">📌 General</option>
+      </select></div>
+    <div class="form-group"><label class="form-label">Task</label>
+      <input class="form-input" id="taskTitle" placeholder="e.g. Revise Optics, Solve PYQs"></div>
+    <button class="btn btn-primary" onclick="saveTask()" style="width:100%">Add Task</button>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/ai.js"></script>
+<script src="assets/js/calendar.js"></script>
+</body>
+</html>
