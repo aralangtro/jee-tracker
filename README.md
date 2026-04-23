@@ -1,6 +1,6 @@
 # JEE Tracker
 
-JEE & CBSE Prep Tracker powered by NVIDIA NIM (Llama 3.3 70B & Vision models).
+JEE & CBSE Prep Tracker powered by your choice of AI API (OpenAI, Google Gemini, Anthropic, or NVIDIA NIM).
 
 ## Getting Started
 
@@ -15,11 +15,12 @@ Follow these instructions to get a copy of the project up and running on your lo
 1. **Clone or Download the Repository:**
    Download the project and extract it to a folder.
 
-2. **Set up your API Keys:**
+2. **Set up your AI API Configuration:**
    - Rename the file `.env.example` to `.env`.
    - Open `.env` in a text editor (like Notepad).
-   - Get your free API keys from [NVIDIA NIM](https://build.nvidia.com/) for `meta/llama-3.3-70b-instruct` and `meta/llama-3.2-90b-vision-instruct`.
-   - Paste your keys into the `.env` file where it says `put_your_api_key_here`.
+   - The app supports **OpenAI, Google Gemini, Anthropic, or NVIDIA NIM**.
+   - Simply uncomment the block for your preferred provider and insert your API key where it says `put_your_api_key_here`.
+   - *Tip: We highly recommend using lighter/faster models (like gpt-4o-mini, gemini-2.5-flash, claude-3-haiku) for the best performance.*
 
 3. **Start the Server:**
    - Double-click the `start.bat` file (or `JEE Tracker - Start Server.bat`).
