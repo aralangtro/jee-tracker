@@ -939,6 +939,7 @@ function init() {
   initTasks();
   initExamCountdowns();
   initPCMPieCharts();
+  if (typeof initBadges === 'function') initBadges();
   const saved = S.getMomentum();
   if (saved) showMomentum(saved);
 }
