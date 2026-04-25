@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # ⚡ JEE Tracker
 
@@ -316,4 +316,4 @@ MIT — Use it, modify it, ship it.
 *If this helped your preparation, star the repo ⭐*
 
 </div>
-]]>
+
