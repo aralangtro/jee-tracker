@@ -45,6 +45,10 @@ const S = {
   get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set: (k,v) => {
     localStorage.setItem(k, JSON.stringify(v));
+    // Dual-write to IndexedDB for data durability
+    if (typeof IDB !== 'undefined' && IDB.isSupported()) {
+      IDB.set(k, v).catch(e => console.warn('[IDB] dual-write failed:', e));
+    }
     if (k !== 'jt_theme' && !k.includes('api_key')) {
       const dump = {};
       for (let i = 0; i < localStorage.length; i++) {
@@ -98,7 +102,10 @@ const S = {
     if (idx >= 0) tests[idx] = test; else tests.push(test);
     S.set(type==='jee'?KEYS.JEE_TESTS:KEYS.CBSE_TESTS, tests);
   },
-  deleteTest: (type, id) => S.set(type==='jee'?KEYS.JEE_TESTS:KEYS.CBSE_TESTS, S.getTests(type).filter(t=>t.id!==id)),
+  deleteTest: (type, id) => {
+    S.set(type==='jee'?KEYS.JEE_TESTS:KEYS.CBSE_TESTS, S.getTests(type).filter(t=>t.id!==id));
+    S.set(KEYS.MOCK_SCORES, S.getMockScores().filter(s => s.testId !== id));
+  },
   getAllTests: () => [...(S.get(KEYS.JEE_TESTS)||[]).map(t=>({...t,type:'jee'})),
                      ...(S.get(KEYS.CBSE_TESTS)||[]).map(t=>({...t,type:'cbse'}))]
                     .sort((a,b)=>new Date(a.date)-new Date(b.date)),
@@ -113,7 +120,8 @@ const S = {
   updateChapter(sub, ch, data) { const syl=S.getSyllabus(); if(!syl[sub])syl[sub]={}; syl[sub][ch]={...syl[sub][ch],...data}; S.set(KEYS.SYLLABUS,syl); },
 
   getMockScores: () => S.get(KEYS.MOCK_SCORES) || [],
-  addMockScore: entry => { const s=S.getMockScores(); s.push({id:Date.now().toString(36),date:today(),...entry}); S.set(KEYS.MOCK_SCORES,s); },
+  addMockScore: entry => { const s=S.getMockScores(); s.push({id:Date.now().toString(36), date: entry.date || today(), ...entry}); S.set(KEYS.MOCK_SCORES,s); },
+  deleteMockScore: id => S.set(KEYS.MOCK_SCORES, S.getMockScores().filter(s => s.id !== id)),
   getMomentum: () => S.get(KEYS.MOMENTUM),
   setMomentum: v => { S.set(KEYS.MOMENTUM,v); S.set(KEYS.MOMENTUM_DATE,today()); },
   getMomentumDate: () => localStorage.getItem(KEYS.MOMENTUM_DATE),
@@ -236,8 +244,6 @@ function openApiModal() {
 function saveNimKeys() {
   const vk = document.getElementById('nimVisionKeyInput').value.trim();
   const rk = document.getElementById('nimReasonKeyInput').value.trim();
-  if (vk && !vk.startsWith('nvapi-')) { toast('Vision key should start with nvapi-', 'error'); return; }
-  if (rk && !rk.startsWith('nvapi-')) { toast('Reasoning key should start with nvapi-', 'error'); return; }
   S.setVisionKey(vk);
   S.setReasonKey(rk);
   initApiStatus();
@@ -283,12 +289,17 @@ function exportData() {
   const dataKeys = [
     KEYS.STUDY_LOGS, KEYS.JEE_TESTS, KEYS.CBSE_TESTS,
     KEYS.TASKS, KEYS.SYLLABUS, KEYS.MOCK_SCORES,
-    KEYS.MOMENTUM, KEYS.MOMENTUM_DATE,
+    KEYS.MOMENTUM, KEYS.MOMENTUM_DATE, KEYS.ERROR_BOOK,
   ];
-  const snapshot = { _version: 2, _exported: new Date().toISOString(), data: {} };
+  const snapshot = { _version: 3, _exported: new Date().toISOString(), _storage: 'dual-idb-ls', data: {} };
   dataKeys.forEach(k => {
     const v = localStorage.getItem(k);
     if (v) snapshot.data[k] = JSON.parse(v);
+  });
+  // Also include jt_syl2 and jt_exam_settings (used directly)
+  ['jt_syl2', 'jt_exam_settings'].forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v) try { snapshot.data[k] = JSON.parse(v); } catch {}
   });
 
   const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
@@ -322,6 +333,10 @@ function importData() {
         Object.entries(snapshot.data).forEach(([k, v]) => {
           localStorage.setItem(k, JSON.stringify(v));
         });
+        // Also write to IndexedDB for durability
+        if (typeof IDB !== 'undefined' && IDB.isSupported()) {
+          IDB.importAll(snapshot.data).then(n => console.log(`[IDB] Imported ${n} keys`));
+        }
         if (typeof toast === 'function') toast('Data restored successfully! Reloading...', 'success');
         setTimeout(() => location.reload(), 1200);
       } catch (err) {
@@ -332,4 +347,53 @@ function importData() {
     reader.readAsText(file);
   };
   input.click();
+}
+
+// ─── Restore from Server Backup ───────────────────────────────────
+async function restoreFromServerBackup() {
+  if (!confirm('Restore data from the last auto-saved server backup?\n\nThis will REPLACE your current data. Cannot be undone.')) return;
+  try {
+    const r = await fetch('/api/backup');
+    if (!r.ok) throw new Error('No server backup found (HTTP ' + r.status + ')');
+    const data = await r.json();
+    if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+      throw new Error('Server backup is empty.');
+    }
+    const count = Object.keys(data).length;
+    Object.entries(data).forEach(([k, v]) => {
+      localStorage.setItem(k, JSON.stringify(v));
+    });
+    // Also write to IndexedDB
+    if (typeof IDB !== 'undefined' && IDB.isSupported()) {
+      IDB.importAll(data).then(n => console.log(`[IDB] Server restore: imported ${n} keys`));
+    }
+    toast(`Restored ${count} keys from server backup! Reloading...`, 'success');
+    setTimeout(() => location.reload(), 1200);
+  } catch (err) {
+    toast('Server restore failed: ' + err.message, 'error');
+  }
+}
+
+// ─── Recover from IndexedDB (if localStorage wiped) ──────────────
+async function recoverFromIDB() {
+  if (typeof IDB === 'undefined' || !IDB.isSupported()) {
+    toast('IndexedDB not available on this browser.', 'error');
+    return;
+  }
+  try {
+    const data = await IDB.exportAll();
+    const keys = Object.keys(data).filter(k => k.startsWith('jt_') && !k.includes('api_key'));
+    if (keys.length === 0) {
+      toast('No data found in IndexedDB to recover.', 'info');
+      return;
+    }
+    if (!confirm(`Found ${keys.length} data keys in IndexedDB. Restore to localStorage?`)) return;
+    keys.forEach(k => {
+      localStorage.setItem(k, JSON.stringify(data[k]));
+    });
+    toast(`Recovered ${keys.length} keys from IndexedDB! Reloading...`, 'success');
+    setTimeout(() => location.reload(), 1200);
+  } catch (err) {
+    toast('IDB recovery failed: ' + err.message, 'error');
+  }
 }

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>JEE Tests — JEE Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -16,11 +17,16 @@
     <div class="nav-section">Tests</div>
     <a href="/jee-tests.html" class="nav-link active"><span class="icon">🎯</span><span>JEE Tests</span></a>
     <a href="/cbse-tests.html" class="nav-link"><span class="icon">📝</span><span>CBSE Tests</span></a>
+    <a href="/test-analytics.html" class="nav-link"><span class="icon">📈</span><span>Test Analytics</span></a>
     <div class="nav-section">Plan</div>
     <a href="/calendar.html" class="nav-link"><span class="icon">📅</span><span>Calendar</span></a>
+    <a href="/revisions.html" class="nav-link nav-neon"><span class="icon">🔥</span><span>Revisions</span></a>
   </nav>
   <div class="sidebar-bottom">
     <button class="theme-toggle" id="themeToggleBtn" onclick="ThemeManager.toggle()">🌙 <span>Dark Mode</span></button>
+    <div class="api-badge" onclick="openSyncModal()" id="syncBadge">
+      <div class="api-dot"></div><span>☁️ Cloud Sync</span>
+    </div>
     <div class="api-badge" onclick="openApiModal()">
       <div class="api-dot" id="apiDot"></div><span id="apiLabel">API Key</span>
     </div>
@@ -33,7 +39,11 @@
       <h1>🎯 JEE Mock Tests</h1>
       <p>Track JEE preparation tests — syllabus analysis, scores &amp; AI coaching</p>
     </div>
-    <button class="btn btn-primary" onclick="openModal('addTestModal')">+ Add Test</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" onclick="openModal('allenImportModal')" title="Set up one-click import from Allen website" style="color:var(--cyan);border-color:rgba(22,211,238,.3);">🌐 Allen Importer</button>
+      <button class="btn btn-ghost" onclick="openModal('pastTestModal')" title="Already gave a test? Log it with full results">📅 Log Past Test</button>
+      <button class="btn btn-primary" onclick="openModal('addTestModal')">+ Add Upcoming Test</button>
+    </div>
   </div>
 
   <div id="conflictBanner"></div>
@@ -203,9 +213,192 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════
+     LOG PAST TEST MODAL — Full results in one step
+═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="pastTestModal">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <div class="modal-title">📅 Log a Past Test with Full Results</div>
+      <button class="btn-icon" onclick="closeModal('pastTestModal')">✕</button>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px;background:rgba(91,141,238,.08);border:1px solid rgba(91,141,238,.2);border-radius:var(--radius-sm);padding:10px 14px;">
+      💡 Forgot to add a test beforehand? Enter any past date — your results will be saved with the correct date.
+    </div>
+
+    <!-- ── ALLEN SCREENSHOT IMPORT ─────────────────────────────── -->
+    <div style="border:1px solid rgba(22,211,238,.3);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;background:linear-gradient(135deg,rgba(22,211,238,.05),rgba(139,92,246,.05));">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--cyan);">🤖 AUTO-IMPORT FROM ALLEN SCREENSHOTS</div>
+        <span style="font-size:.65rem;color:var(--muted);">Upload all result pages → AI fills everything</span>
+      </div>
+
+      <!-- Drop zone -->
+      <div id="allenDropZone"
+        onclick="document.getElementById('allenFileInput').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--cyan)'"
+        ondragleave="this.style.borderColor='rgba(22,211,238,.3)'"
+        ondrop="event.preventDefault();this.style.borderColor='rgba(22,211,238,.3)';handleAllenDrop(event)"
+        style="border:2px dashed rgba(22,211,238,.3);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;transition:.2s;">
+        <div style="font-size:1.6rem;margin-bottom:4px;">📸</div>
+        <div style="font-size:.78rem;color:var(--text2);">Drop screenshots here or <span style="color:var(--cyan);font-weight:700;">click to browse</span></div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:2px;">Upload Overview + Subjects + Chapters pages (up to 5 screenshots)</div>
+      </div>
+      <input type="file" id="allenFileInput" multiple accept="image/*,.png,.jpg,.jpeg,.webp"
+        style="display:none" onchange="onAllenFilesSelected(this)">
+
+      <!-- Selected files preview -->
+      <div id="allenFilePreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+
+      <!-- Parse button -->
+      <button class="btn btn-ghost" id="allenParseBtn" onclick="parseAllenScreenshots()"
+        style="width:100%;margin-top:10px;border-color:rgba(22,211,238,.4);color:var(--cyan);display:none;">
+        🤖 Extract All Data with AI
+      </button>
+      <div id="allenParseStatus" style="font-size:.75rem;color:var(--muted);margin-top:6px;text-align:center;display:none;"></div>
+    </div>
+    <!-- ── END IMPORT ──────────────────────────────────────────── -->
+
+    <div class="grid-2" style="gap:12px;">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Test Name</label>
+        <input class="form-input" id="pt_name" placeholder="e.g. Allen Major Test #5">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Test Date <span style="color:var(--muted);font-weight:400">(can be past)</span></label>
+        <input class="form-input" id="pt_date" type="date">
+      </div>
+    </div>
+
+    <!-- Category -->
+    <div class="form-group" style="margin-top:14px;">
+      <label class="form-label">Test Type</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;" id="ptCategoryPicker">
+        <div class="cat-opt active" data-cat="main" onclick="selectPtCat(this)" style="border:2px solid var(--blue);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;background:rgba(91,141,238,.12);">
+          <div style="font-size:1.1rem">📝</div><div style="font-size:.75rem;font-weight:700;color:var(--blue)">JEE Main</div>
+          <div style="font-size:.6rem;color:var(--muted)">/300</div>
+        </div>
+        <div class="cat-opt" data-cat="advanced" onclick="selectPtCat(this)" style="border:2px solid var(--border);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;">
+          <div style="font-size:1.1rem">🏆</div><div style="font-size:.75rem;font-weight:700;color:var(--purple)">JEE Advanced</div>
+          <div style="font-size:.6rem;color:var(--muted)">P1+P2</div>
+        </div>
+        <div class="cat-opt" data-cat="both" onclick="selectPtCat(this)" style="border:2px solid var(--border);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;">
+          <div style="font-size:1.1rem">⚡</div><div style="font-size:.75rem;font-weight:700;color:var(--cyan)">Both</div>
+          <div style="font-size:.6rem;color:var(--muted)">Main+Adv</div>
+        </div>
+        <div class="cat-opt" data-cat="school" onclick="selectPtCat(this)" style="border:2px solid var(--border);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;">
+          <div style="font-size:1.1rem">🏫</div><div style="font-size:.75rem;font-weight:700;color:var(--amber)">School Mock</div>
+          <div style="font-size:.6rem;color:var(--muted)">Custom</div>
+        </div>
+      </div>
+      <input type="hidden" id="pt_cat" value="main">
+    </div>
+
+    <!-- Score entry -->
+    <div id="pt_scoreMain" style="margin-top:4px;">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px;">Enter marks per subject (Max 100 each • +4 correct, −1 wrong)</div>
+      <div class="grid-3" style="gap:10px;">
+        <div class="form-group" style="margin:0"><label class="form-label" style="color:var(--phy)">⚡ Physics</label>
+          <input class="form-input" id="pt_phy" type="number" min="-26" max="100" placeholder="0–100" oninput="calcPtMainTotal()"></div>
+        <div class="form-group" style="margin:0"><label class="form-label" style="color:var(--chem)">🧪 Chemistry</label>
+          <input class="form-input" id="pt_chem" type="number" min="-26" max="100" placeholder="0–100" oninput="calcPtMainTotal()"></div>
+        <div class="form-group" style="margin:0"><label class="form-label" style="color:var(--math)">∑ Mathematics</label>
+          <input class="form-input" id="pt_math" type="number" min="-26" max="100" placeholder="0–100" oninput="calcPtMainTotal()"></div>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+        <span style="font-size:.82rem;font-weight:700;">Total Score</span>
+        <span id="pt_mainTotal" style="font-size:1.4rem;font-weight:900;color:var(--blue)">0 / 300</span>
+      </div>
+    </div>
+
+    <div id="pt_scoreSchool" style="display:none;margin-top:4px;">
+      <div class="grid-2" style="gap:10px;">
+        <div class="form-group"><label class="form-label">Your Score</label>
+          <input class="form-input" id="pt_school" type="number" placeholder="e.g. 185"></div>
+        <div class="form-group"><label class="form-label">Out of (Max)</label>
+          <input class="form-input" id="pt_schoolmax" type="number" value="300"></div>
+      </div>
+    </div>
+
+    <!-- Wrong questions section -->
+    <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:14px;background:var(--card2);">
+      <div style="font-size:.72rem;font-weight:700;color:var(--red);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em;">❌ WRONG QUESTIONS / ERROR REPORT</div>
+
+      <div class="grid-3" style="gap:10px;margin-bottom:14px;">
+        <div class="form-group" style="margin:0">
+          <label class="form-label" style="color:var(--phy);font-size:.72rem;">⚡ Physics — Wrong</label>
+          <input class="form-input" id="pt_wphy" type="number" min="0" max="30" placeholder="# wrong">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label" style="color:var(--chem);font-size:.72rem;">🧪 Chemistry — Wrong</label>
+          <input class="form-input" id="pt_wchem" type="number" min="0" max="30" placeholder="# wrong">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label" style="color:var(--math);font-size:.72rem;">∑ Maths — Wrong</label>
+          <input class="form-input" id="pt_wmath" type="number" min="0" max="30" placeholder="# wrong">
+        </div>
+      </div>
+
+      <div id="pt_error_container" style="background:var(--bg);border:1px solid rgba(255,255,255,.05);border-radius:var(--radius-sm);padding:10px;">
+        <div style="font-size:.75rem;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+          <span>🧠 Detailed Error Analysis</span>
+          <button class="btn btn-ghost btn-sm" style="color:var(--cyan);padding:4px 8px;font-size:.7rem;border:1px solid rgba(22,211,238,.3)" onclick="addPtError()">+ Add Mistake</button>
+        </div>
+        <div id="pt_error_list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <!-- Fallback for unstructured notes -->
+        <textarea class="form-textarea" id="pt_wrongs" style="min-height:60px;margin-top:8px;display:none" placeholder="General error notes (optional)..."></textarea>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="savePastTest()" style="width:100%;margin-top:16px;justify-content:center;">💾 Save Past Test with Results</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ALLEN IMPORT BOOKMARKLET MODAL
+═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="allenImportModal">
+  <div class="modal" style="max-width:550px;">
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--cyan)">🌐 1-Click Allen Importer</div>
+      <button class="btn-icon" onclick="closeModal('allenImportModal')">✕</button>
+    </div>
+    
+    <div style="font-size:.85rem;color:var(--text2);margin-bottom:16px;line-height:1.5;">
+      Don't take screenshots manually! Add this <strong>Bookmarklet</strong> to your browser, go to any Allen result page, and click it. It will auto-scrape all tabs (Overview, Physics, Maths, Chemistry) and send the data here.
+    </div>
+
+    <div style="border:1px dashed rgba(22,211,238,.4);background:rgba(22,211,238,.05);border-radius:var(--radius-sm);padding:20px;text-align:center;margin-bottom:20px;">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Drag this button to your Bookmarks Bar</div>
+      
+      <a id="allenBookmarkletBtn" href="#" 
+         style="display:inline-block;background:var(--cyan);color:#000;font-weight:800;padding:10px 24px;border-radius:20px;text-decoration:none;box-shadow:0 4px 15px rgba(22,211,238,.3);cursor:grab;"
+         onclick="event.preventDefault();alert('Drag this button to your bookmarks bar. Don\\'t click it here.')">
+        📥 Send to JEE Tracker
+      </a>
+      
+      <div style="font-size:.7rem;color:var(--muted);margin-top:12px;">
+        (Press Ctrl+Shift+B or Cmd+Shift+B to show your bookmarks bar)
+      </div>
+    </div>
+
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:.75rem;color:var(--muted);line-height:1.6;">
+      <strong style="color:var(--text)">How to use:</strong>
+      <ol style="margin-top:6px;padding-left:16px;">
+        <li>Open your Allen result page (the one with the sidebar).</li>
+        <li>Click the <strong>"Send to JEE Tracker"</strong> bookmark.</li>
+        <li>Wait 3-5 seconds while it scans the tabs.</li>
+        <li>Come back to this page — the modal will auto-open with your data!</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container"></div>
+<script src="assets/js/idb.js"></script>
 <script src="assets/js/storage.js"></script>
 <script src="assets/js/ai.js"></script>
+<script src="assets/js/sync.js"></script>
 <script src="assets/js/jee-tests.js"></script>
 </body>
 </html>

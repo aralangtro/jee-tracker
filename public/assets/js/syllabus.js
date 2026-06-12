@@ -77,7 +77,7 @@ function filterChapters(chapters) {
 
 // ── Overall stats ─────────────────────────────────────────────────
 function updateOverall() {
-  let mst=0, pyq=0, thy=0, todo=0, total=0;
+  let mst=0, pyq=0, thy_pyq=0, thy=0, todo=0, total=0;
   ['phy','chem','math'].forEach(subKey => {
     if (JEE_SYLLABUS[subKey]) {
       JEE_SYLLABUS[subKey].chapters.forEach(ch => {
@@ -86,15 +86,17 @@ function updateOverall() {
         const st = getChapter(ch.id).status;
         if (st==='mastered') mst++;
         else if (st==='pyqs') pyq++;
+        else if (st==='theory_pyq') thy_pyq++;
         else if (st==='theory') thy++;
         else todo++;
       });
     }
   });
-  const pct = total ? Math.round(((mst*1+pyq*.7+thy*.4)/total)*100) : 0;
+  const pct = total ? Math.round(((mst*1 + pyq*0.75 + thy_pyq*0.55 + thy*0.3)/total)*100) : 0;
   document.getElementById('overallStats').innerHTML = `
     <span class="prog-stat prog-mst">✅ Mastered: ${mst}</span>
     <span class="prog-stat prog-pyq">📘 + PYQs: ${pyq}</span>
+    <span class="prog-stat prog-thy" style="color:var(--orange)">📙 Th+PYQ: ${thy_pyq}</span>
     <span class="prog-stat prog-thy">📖 Theory: ${thy}</span>
     <span class="prog-stat prog-todo">📋 To Do: ${todo}</span>
   `;
@@ -111,7 +113,7 @@ function getSubjectStats(sub) {
     if (classFilter==='12' && ch.cls!==12) return;
     total++;
     const st = getChapter(ch.id).status;
-    if (st==='mastered' || st==='pyqs') mst++;
+    if (st==='mastered' || st==='pyqs' || st==='theory_pyq') mst++;
   });
   return { mst, total, pct: total ? Math.round(mst/total*100) : 0 };
 }
@@ -120,7 +122,7 @@ function getSubjectStats(sub) {
 function renderChapterCard(sub, ch) {
   const data = getChapter(ch.id);
   const isOpen = !!openChapters[ch.id];
-  const isDone = data.status === 'mastered' || data.status === 'pyqs';
+  const isDone = data.status === 'mastered' || data.status === 'pyqs' || data.status === 'theory_pyq';
   const topicsDone = Object.values(data.topics||{}).filter(Boolean).length;
   const topicsTotal = ch.topics.length;
 
@@ -180,7 +182,7 @@ function renderPriorityView(subKey, sub, chapters) {
     if (!chs.length) return;
     const gKey = `${subKey}_${pr}`;
     const isOpen = openGroups[gKey] !== false;
-    const done = chs.filter(c => ['mastered', 'pyqs'].includes(getChapter(c.id).status)).length;
+    const done = chs.filter(c => ['mastered', 'pyqs', 'theory_pyq'].includes(getChapter(c.id).status)).length;
     const pct = Math.round(done/chs.length*100);
     const col = PRIORITY_COLORS[pr];
 
@@ -191,7 +193,7 @@ function renderPriorityView(subKey, sub, chapters) {
         <span class="priority-badge" style="background:${col}22;color:${col};">${pr}</span>
         <span style="font-size:.8rem;font-weight:700;color:${col}">${PRIORITY_LABELS[pr]}</span>
         <span class="priority-count">${chs.length} chapters</span>
-        <span class="priority-pct">${done}/${chs.length} mastered (${pct}%)</span>
+        <span class="priority-pct">${done}/${chs.length} covered (${pct}%)</span>
         <span class="priority-chevron ${isOpen?'open':''}">▼</span>
       </div>
       <div class="priority-body ${isOpen?'open':''}" id="grp_${gKey}"></div>`;
@@ -213,7 +215,7 @@ function renderUnitView(subKey, sub, chapters) {
   Object.entries(groups).forEach(([unit, chs]) => {
     const gKey = `${subKey}_unit_${unit}`;
     const isOpen = openGroups[gKey] !== false;
-    const done = chs.filter(c => ['mastered', 'pyqs'].includes(getChapter(c.id).status)).length;
+    const done = chs.filter(c => ['mastered', 'pyqs', 'theory_pyq'].includes(getChapter(c.id).status)).length;
 
     const group = document.createElement('div');
     group.className = 'priority-group';
@@ -222,7 +224,7 @@ function renderUnitView(subKey, sub, chapters) {
         <span class="priority-badge" style="background:var(--card2);color:var(--text2);">📦</span>
         <span style="font-size:.8rem;font-weight:700;color:var(--text2)">${unit}</span>
         <span class="priority-count">${chs.length} chapters</span>
-        <span class="priority-pct">${done}/${chs.length} mastered</span>
+        <span class="priority-pct">${done}/${chs.length} covered</span>
         <span class="priority-chevron ${isOpen?'open':''}">▼</span>
       </div>
       <div class="priority-body ${isOpen?'open':''}" id="grp_${gKey}"></div>`;

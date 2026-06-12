@@ -4,6 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dashboard — JEE Tracker</title>
 <meta name="description" content="Your personal JEE & CBSE preparation command center">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -22,11 +23,16 @@
     <div class="nav-section">Tests</div>
     <a href="/jee-tests.html" class="nav-link"><span class="icon">🎯</span><span>JEE Tests</span></a>
     <a href="/cbse-tests.html" class="nav-link"><span class="icon">📝</span><span>CBSE Tests</span></a>
+    <a href="/test-analytics.html" class="nav-link"><span class="icon">📈</span><span>Test Analytics</span></a>
     <div class="nav-section">Plan</div>
     <a href="/calendar.html" class="nav-link"><span class="icon">📅</span><span>Calendar</span></a>
+    <a href="/revisions.html" class="nav-link nav-neon"><span class="icon">🔥</span><span>Revisions</span></a>
   </nav>
   <div class="sidebar-bottom">
     <button class="theme-toggle" id="themeToggleBtn" onclick="ThemeManager.toggle()">🌙 <span>Dark Mode</span></button>
+    <div class="api-badge" onclick="openSyncModal()" id="syncBadge">
+      <div class="api-dot"></div><span>☁️ Cloud Sync</span>
+    </div>
     <div class="api-badge" onclick="openApiModal()">
       <div class="api-dot" id="apiDot"></div><span id="apiLabel">API Key</span>
     </div>
@@ -42,6 +48,8 @@
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-ghost btn-sm" onclick="importData()" title="Restore from backup file" style="font-size:.75rem;padding:7px 12px;">📂 Import</button>
+      <button class="btn btn-ghost btn-sm" onclick="restoreFromServerBackup()" title="Restore from last auto-saved server backup" style="font-size:.75rem;padding:7px 12px;">☁️ Server Restore</button>
+      <button class="btn btn-ghost btn-sm" onclick="recoverFromIDB()" title="Recover data from IndexedDB if browser data was cleared" style="font-size:.75rem;padding:7px 12px;">🔄 IDB Recovery</button>
       <button class="btn btn-ghost btn-sm" onclick="exportData()" title="Download backup JSON" style="font-size:.75rem;padding:7px 12px;">💾 Backup</button>
       <button class="btn btn-ghost btn-sm" onclick="openLogModal()">📝 Log Today's Study</button>
     </div>
@@ -115,7 +123,7 @@
   </div>
 
   <!-- STATS ROW -->
-  <div class="grid-4" style="margin-bottom:20px;">
+  <div class="grid-5" style="margin-bottom:20px;">
     <div class="stat-card scroll-reveal delay-1" style="--accent:var(--blue)">
       <div class="stat-value" id="statTodayHours">0h</div>
       <div class="stat-label">Today's Study</div>
@@ -135,6 +143,11 @@
       <div class="stat-value" id="statSyllabus">0%</div>
       <div class="stat-label">Syllabus Done</div>
       <div class="stat-sub" id="statSyllabusSub"></div>
+    </div>
+    <div class="stat-card scroll-reveal delay-5" style="--accent:var(--red)">
+      <div class="stat-value" id="statTotalHours">0h</div>
+      <div class="stat-label">Total Hours</div>
+      <div class="stat-sub">All-time study</div>
     </div>
   </div>
 
@@ -351,10 +364,13 @@
 </div>
 
 <div class="toast-container"></div>
+<script src="assets/js/idb.js"></script>
 <script src="assets/js/storage.js"></script>
 <script src="assets/js/syllabus-data.js"></script>
 <script src="assets/js/ai.js"></script>
 <script src="assets/js/badges.js"></script>
+<script src="assets/js/spaced-repetition.js"></script>
+<script src="assets/js/sync.js"></script>
 <script src="assets/js/dashboard.js"></script>
 </body>
 </html>

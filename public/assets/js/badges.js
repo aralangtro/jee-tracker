@@ -12,6 +12,7 @@ const BADGE_DEFS = [
     id: 'electrostatics_slayer', category: 'mastery',
     icon: '⚡', name: 'Electrostatics Slayer',
     desc: 'Master all Electrostatics & Current Electricity chapters',
+    reward: 'Reward: +20% problem-solving speed in electromagnetism',
     rarity: 'epic',
     check: (syl) => allMastered(syl, ['phy_em', 'phy_curr']),
   },
@@ -19,6 +20,7 @@ const BADGE_DEFS = [
     id: 'organic_master', category: 'mastery',
     icon: '🧬', name: 'Organic Chemistry Master',
     desc: 'Master GOC, Haloalkanes, Carbonyls, Alcohols & Amines',
+    reward: 'Reward: +10 marks guaranteed in JEE Main Chemistry',
     rarity: 'legendary',
     check: (syl) => allMastered(syl, ['ch_goc', 'ch_haloalk', 'ch_carbony', 'ch_alcohol', 'ch_amines']),
   },
@@ -26,6 +28,7 @@ const BADGE_DEFS = [
     id: 'calculus_conqueror', category: 'mastery',
     icon: '∫', name: 'Calculus Conqueror',
     desc: 'Master Limits, Differentiation, Indefinite & Definite Integration',
+    reward: 'Reward: Immunity to lengthy math calculations',
     rarity: 'legendary',
     check: (syl) => allMastered(syl, ['m_lim', 'm_deriv', 'm_indef', 'm_integ']),
   },
@@ -33,6 +36,7 @@ const BADGE_DEFS = [
     id: 'mechanics_lord', category: 'mastery',
     icon: '🔧', name: 'Mechanics Lord',
     desc: 'Master Kinematics, Laws of Motion, WPE, COM & Rotational Motion',
+    reward: 'Reward: I.E. Irodov level unlocked',
     rarity: 'legendary',
     check: (syl) => allMastered(syl, ['phy_kine', 'phy_nwt', 'phy_wpe', 'phy_com', 'phy_rot']),
   },
@@ -40,6 +44,7 @@ const BADGE_DEFS = [
     id: 'inorganic_wizard', category: 'mastery',
     icon: '🧙', name: 'Inorganic Wizard',
     desc: 'Master Chemical Bonding, s-Block, p-Block, d-Block & Coordination',
+    reward: 'Reward: Ability to solve questions in under 10 seconds',
     rarity: 'legendary',
     check: (syl) => allMastered(syl, ['ch_bond', 'ch_sblock', 'ch_pblock', 'ch_dblock', 'ch_coord']),
   },
@@ -47,6 +52,7 @@ const BADGE_DEFS = [
     id: 'algebra_ace', category: 'mastery',
     icon: '🎲', name: 'Algebra Ace',
     desc: 'Master Complex Numbers, PnC, Binomial & Sequences',
+    reward: 'Reward: +5 IQ points in logical reasoning',
     rarity: 'epic',
     check: (syl) => allMastered(syl, ['m_complex', 'm_perm', 'm_binom', 'm_seqseries']),
   },
@@ -54,6 +60,7 @@ const BADGE_DEFS = [
     id: 'modern_physics_pro', category: 'mastery',
     icon: '☢️', name: 'Modern Physics Pro',
     desc: 'Master Modern Physics, Dual Nature, Atoms & Nuclei',
+    reward: 'Reward: 3 guaranteed easy questions in JEE Advanced',
     rarity: 'epic',
     check: (syl) => allMastered(syl, ['phy_modern', 'phy_dual', 'phy_atoms', 'phy_nuclei']),
   },
@@ -61,8 +68,99 @@ const BADGE_DEFS = [
     id: 'physical_chem_king', category: 'mastery',
     icon: '⚗️', name: 'Physical Chemistry King',
     desc: 'Master Thermo, Equilibrium, Kinetics, Electrochem & Solutions',
+    reward: 'Reward: Perfection in numerical approximations',
     rarity: 'legendary',
     check: (syl) => allMastered(syl, ['ch_thermo', 'ch_equil', 'ch_kinetics', 'ch_electro', 'ch_sol']),
+  },
+
+  
+  {
+    id: 'thermal_titan', category: 'mastery',
+    icon: '🌡️', name: 'Thermal Physics Titan',
+    desc: 'Master Thermodynamics & Kinetic Theory of Gases',
+    reward: 'Reward: +20 resistance to heat and pressure',
+    rarity: 'epic',
+    check: (syl) => allMastered(syl, ['phy_thermo', 'phy_kt']),
+  },
+  {
+    id: 'magnetism_master', category: 'mastery',
+    icon: '🧲', name: 'Magnetism Master',
+    desc: 'Master Magnetic Effects, EMI, AC & EM Waves',
+    reward: 'Reward: +10 attraction to correct answers',
+    rarity: 'legendary',
+    check: (syl) => allMastered(syl, ['phy_mag', 'phy_emi', 'phy_ac', 'phy_emwaves']),
+  },
+  {
+    id: 'optics_overlord', category: 'mastery',
+    icon: '🔭', name: 'Optics Overlord',
+    desc: 'Master Ray Optics & Wave Optics',
+    reward: 'Reward: Crystal clear vision of complex concepts',
+    rarity: 'legendary',
+    check: (syl) => allMastered(syl, ['phy_optics', 'phy_wavop']),
+  },
+  {
+    id: 'waves_osc_expert', category: 'mastery',
+    icon: '〰️', name: 'Oscillation Expert',
+    desc: 'Master Waves, SHM & Oscillations',
+    reward: 'Reward: Unshakable mental frequency',
+    rarity: 'epic',
+    check: (syl) => allMastered(syl, ['phy_waves', 'phy_shm', 'phy_osc']),
+  },
+  {
+    id: 'matter_gravity_guru', category: 'mastery',
+    icon: '🌍', name: 'Matter & Gravity Guru',
+    desc: 'Master Gravitation, Fluids & Properties of Matter',
+    reward: 'Reward: Grounded understanding of the physical world',
+    rarity: 'epic',
+    check: (syl) => allMastered(syl, ['phy_grav', 'phy_fluid', 'phy_prop']),
+  },
+  {
+    id: 'coord_geom_guru', category: 'mastery',
+    icon: '📏', name: 'Coordinate Geometry Guru',
+    desc: 'Master Straight Lines, Circles & Conics',
+    reward: 'Reward: Perfect alignment with IIT milestones',
+    rarity: 'legendary',
+    check: (syl) => allMastered(syl, ['m_sl', 'm_circle', 'm_coord']),
+  },
+  {
+    id: 'trig_tactician', category: 'mastery',
+    icon: '📐', name: 'Trigonometry Tactician',
+    desc: 'Master Trigonometry & Properties of Triangles',
+    reward: 'Reward: Infinite angle manipulation skills',
+    rarity: 'epic',
+    check: (syl) => allMastered(syl, ['m_trig', 'm_prop_trig']),
+  },
+  {
+    id: 'vector_3d_vanguard', category: 'mastery',
+    icon: '🧊', name: 'Vector & 3D Vanguard',
+    desc: 'Master Vectors & 3D Geometry',
+    reward: 'Reward: Multi-dimensional problem solving unlocked',
+    rarity: 'epic',
+    check: (syl) => allMastered(syl, ['m_vec3d']),
+  },
+  {
+    id: 'data_logic_decoder', category: 'mastery',
+    icon: '📊', name: 'Data & Logic Decoder',
+    desc: 'Master Matrices, Determinants, Probability & Stats',
+    reward: 'Reward: +99% probability of scoring high',
+    rarity: 'legendary',
+    check: (syl) => allMastered(syl, ['m_matdet', 'm_prob', 'm_stats']),
+  },
+  {
+    id: 'atomic_foundation_boss', category: 'mastery',
+    icon: '⚛️', name: 'Atomic Foundation Boss',
+    desc: 'Master Mole Concept, Atomic Structure & Periodic Table',
+    reward: 'Reward: Flawless foundational logic in Chemistry',
+    rarity: 'epic',
+    check: (syl) => allMastered(syl, ['ch_mole', 'ch_atom', 'ch_ptable']),
+  },
+  {
+    id: 'chem_polymath', category: 'mastery',
+    icon: '🧪', name: 'Chemistry Polymath',
+    desc: 'Master Hydrocarbons, Biomolecules, Polymers & Environmental Chemistry',
+    reward: 'Reward: Photographic memory for fact-based questions',
+    rarity: 'rare',
+    check: (syl) => allMastered(syl, ['ch_hydro', 'ch_biomol', 'ch_poly', 'ch_enviro']),
   },
 
   // ─── CONSISTENCY ────────────────────────────────────────────────
@@ -70,6 +168,7 @@ const BADGE_DEFS = [
     id: 'streak_7', category: 'consistency',
     icon: '🔥', name: '7-Day Fire',
     desc: 'Study 7 consecutive days',
+    reward: 'Reward: Momentum building (+1 Focus)',
     rarity: 'common',
     check: (_, logs) => getStreak(logs) >= 7,
   },
@@ -77,6 +176,7 @@ const BADGE_DEFS = [
     id: 'streak_14', category: 'consistency',
     icon: '🔥', name: 'Fortnight Fury',
     desc: 'Study 14 consecutive days',
+    reward: 'Reward: Distraction immunity shield activated',
     rarity: 'rare',
     check: (_, logs) => getStreak(logs) >= 14,
   },
@@ -84,6 +184,7 @@ const BADGE_DEFS = [
     id: 'streak_30', category: 'consistency',
     icon: '💎', name: '30-Day Diamond',
     desc: 'Study 30 consecutive days without a single zero-day',
+    reward: 'Reward: Unbreakable discipline trait acquired',
     rarity: 'epic',
     check: (_, logs) => getStreak(logs) >= 30,
   },
@@ -91,6 +192,7 @@ const BADGE_DEFS = [
     id: 'century_hours', category: 'consistency',
     icon: '💯', name: 'Century Club',
     desc: 'Log 100 total study hours',
+    reward: 'Reward: Foundational stamina unlocked',
     rarity: 'rare',
     check: (_, logs) => totalHours(logs) >= 100,
   },
@@ -98,6 +200,7 @@ const BADGE_DEFS = [
     id: 'marathon_500', category: 'consistency',
     icon: '🏃', name: 'Marathon Runner',
     desc: 'Log 500 total study hours',
+    reward: 'Reward: Rank booster (+10,000 rank jump)',
     rarity: 'epic',
     check: (_, logs) => totalHours(logs) >= 500,
   },
@@ -105,6 +208,7 @@ const BADGE_DEFS = [
     id: 'thousand_hours', category: 'consistency',
     icon: '👑', name: '1000-Hour Monarch',
     desc: 'Log 1000 total study hours — true dedication',
+    reward: 'Reward: Top 1% Aspirant Status',
     rarity: 'legendary',
     check: (_, logs) => totalHours(logs) >= 1000,
   },
@@ -114,6 +218,7 @@ const BADGE_DEFS = [
     id: 'perfect_day', category: 'performance',
     icon: '🌟', name: 'Perfect Day',
     desc: 'Score 90+ on an AI daily rating',
+    reward: 'Reward: Complete satisfaction before sleep',
     rarity: 'rare',
     check: (_, logs) => logs.some(l => (l.aiRating || 0) >= 90),
   },
@@ -121,6 +226,7 @@ const BADGE_DEFS = [
     id: 'triple_threat', category: 'performance',
     icon: '🎯', name: 'Triple Threat',
     desc: 'Study all 3 core subjects (PCM) in a single day',
+    reward: 'Reward: Brain-switching agility increased',
     rarity: 'common',
     check: (_, logs) => logs.some(l => (l.phy || 0) > 0 && (l.chem || 0) > 0 && (l.math || 0) > 0),
   },
@@ -128,6 +234,7 @@ const BADGE_DEFS = [
     id: 'beast_mode', category: 'performance',
     icon: '💪', name: 'Beast Mode',
     desc: 'Study 10+ hours in a single day',
+    reward: 'Reward: Superhuman endurance unlocked',
     rarity: 'rare',
     check: (_, logs) => logs.some(l => (l.total || 0) >= 10),
   },
@@ -135,6 +242,7 @@ const BADGE_DEFS = [
     id: 'mock_master', category: 'performance',
     icon: '📝', name: 'Mock Master',
     desc: 'Score above 75% in a mock test',
+    reward: 'Reward: IIT-NIT confidence barrier broken',
     rarity: 'rare',
     check: (_, __, mocks) => mocks.some(m => m.score / m.max >= 0.75),
   },
@@ -142,6 +250,7 @@ const BADGE_DEFS = [
     id: 'mock_perfectionist', category: 'performance',
     icon: '🏅', name: 'Mock Perfectionist',
     desc: 'Score above 90% in any mock test',
+    reward: 'Reward: Under-500 AIR potential recognized',
     rarity: 'epic',
     check: (_, __, mocks) => mocks.some(m => m.score / m.max >= 0.9),
   },
@@ -149,6 +258,7 @@ const BADGE_DEFS = [
     id: 'five_green_days', category: 'performance',
     icon: '🟢', name: 'Green Week',
     desc: 'Get 5 days with AI rating 80+ in a single week',
+    reward: 'Reward: Flow-state mastery',
     rarity: 'epic',
     check: (_, logs) => {
       for (let i = 0; i <= logs.length - 5; i++) {
@@ -165,6 +275,7 @@ const BADGE_DEFS = [
     id: 'first_blood', category: 'milestone',
     icon: '🩸', name: 'First Blood',
     desc: 'Master your very first chapter',
+    reward: 'Reward: The journey of a thousand miles begins',
     rarity: 'common',
     check: (syl) => countMastered(syl) >= 1,
   },
@@ -172,6 +283,7 @@ const BADGE_DEFS = [
     id: 'ten_down', category: 'milestone',
     icon: '🎪', name: '10 Down',
     desc: 'Master 10 chapters total',
+    reward: 'Reward: Momentum established',
     rarity: 'rare',
     check: (syl) => countMastered(syl) >= 10,
   },
@@ -179,6 +291,7 @@ const BADGE_DEFS = [
     id: 'halfway_there', category: 'milestone',
     icon: '⚡', name: 'Halfway There',
     desc: 'Master 50% of the JEE syllabus',
+    reward: 'Reward: 95th Percentile safety net secured',
     rarity: 'epic',
     check: (syl) => {
       const { done, total } = countAllJEE(syl);
@@ -189,6 +302,7 @@ const BADGE_DEFS = [
     id: 'syllabus_complete', category: 'milestone',
     icon: '🏆', name: 'Syllabus Slayer',
     desc: 'Master 100% of the JEE syllabus — absolute legend',
+    reward: 'Reward: Fearlessness. You are ready.',
     rarity: 'legendary',
     check: (syl) => {
       const { done, total } = countAllJEE(syl);
@@ -199,6 +313,7 @@ const BADGE_DEFS = [
     id: 'error_book_10', category: 'milestone',
     icon: '📒', name: 'Error Hunter',
     desc: 'Log 10 mistakes in the Error Book — learning from failures',
+    reward: 'Reward: Silly-mistake immunity +5',
     rarity: 'common',
     check: () => (S.getErrors?.() || []).length >= 10,
   },
@@ -367,14 +482,25 @@ function renderBadges(containerId) {
             ${catBadges.map(b => {
               const isEarned = earned.includes(b.id);
               const r = RARITY[b.rarity] || RARITY.common;
+              
+              const rewardText = b.reward || 'Reward: 100 XP & Eternal Glory';
+
               return `
-                <div class="badge-card ${isEarned ? 'badge-earned' : 'badge-locked'}"
-                     style="--badge-color:${r.color};--badge-bg:${r.bg};--badge-border:${r.border};--badge-glow:${r.glow};"
-                     title="${b.desc}">
-                  <div class="badge-icon ${isEarned ? 'badge-icon-earned' : ''}">${isEarned ? b.icon : '🔒'}</div>
-                  <div class="badge-name">${b.name}</div>
-                  <div class="badge-rarity" style="color:${r.color};">${r.label}</div>
-                  ${isEarned ? '<div class="badge-check">✓</div>' : ''}
+                <div class="badge-wrapper" style="position:relative;">
+                  <div class="badge-tooltip">
+                    <div class="tooltip-title">${b.name}</div>
+                    <div class="tooltip-req"><strong>Quest:</strong> ${b.desc}</div>
+                    <div class="tooltip-reward">${rewardText}</div>
+                    <div class="badge-tooltip-watermark">🐉</div>
+                  </div>
+
+                  <div class="badge-card ${isEarned ? 'badge-earned' : 'badge-locked'}"
+                       style="--badge-color:${r.color};--badge-bg:${r.bg};--badge-border:${r.border};--badge-glow:${r.glow};">
+                    <div class="badge-icon ${isEarned ? 'badge-icon-earned' : ''}">${isEarned ? b.icon : '🔒'}</div>
+                    <div class="badge-name">${b.name}</div>
+                    <div class="badge-rarity" style="color:${r.color};">${r.label}</div>
+                    ${isEarned ? '<div class="badge-check">✓</div>' : ''}
+                  </div>
                 </div>`;
             }).join('')}
           </div>

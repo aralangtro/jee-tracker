@@ -10,6 +10,7 @@ const PORT   = 5714;
 const upload = multer({ dest: 'uploads/', limits: { fileSize: 25 * 1024 * 1024 } });
 
 app.use(express.json({ limit: '10mb' }));
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── AI Model & API Configuration ─────────────────────────────────
@@ -278,59 +279,9 @@ Return ONLY valid JSON (no markdown):
   }
 });
 
-// ─────────────────────────────────────────────────────────────────
-// Deterministic rating calculator — AI cannot override this number
-// ─────────────────────────────────────────────────────────────────
-function computeRating(sessions, totalHours) {
-  // Step 1 — Quality per block (picks best applicable combo)
-  function blockQuality(types) {
-    const has = t => (types||[]).includes(t);
-    if (has('pyq') && (has('module') || has('sample'))) return 73;
-    if (has('pyq') && has('revision')) return 70;
-    if (has('pyq') && has('theory'))   return 67;
-    if (has('pyq') && has('video'))    return 63;
-    if (has('pyq'))                    return 75;
-    if (has('mock'))                   return 58;
-    if (has('sample') || has('module')) return 72;
-    if (has('revision') && has('theory')) return 38;
-    if (has('revision'))               return 32;
-    if (has('theory') && has('video')) return 20;
-    if (has('theory'))                 return 25;
-    return 14; // video only / unspecified
-  }
-  const active = (sessions||[]).filter(s => (s.hours||0) > 0);
-  const blockScores = active.map(s =>
-    blockQuality(Array.isArray(s.types) ? s.types : (s.type ? [s.type] : []))
-  );
-  const Q = blockScores.length > 0
-    ? Math.min(75, blockScores.reduce((a,b)=>a+b,0) / blockScores.length)
-    : 14;
+// ── Deterministic rating calculator — shared with test suite ──────
+const { computeRating, ratingToGrade, ratingToVerdict } = require('./lib/rating');
 
-  // Step 2 — Subject balance
-  const cores = new Set(active.map(s=>s.subject).filter(s=>['phy','chem','math'].includes(s)));
-  const B = cores.size >= 3 ? 25 : cores.size === 2 ? 12 : cores.size === 1 ? 3 : 0;
-
-  // Step 3 — Time multiplier (2h=0.42 → max 2h score ~42, typical session ~30-32)
-  const table = [[0,0.00],[1,0.20],[2,0.42],[3,0.52],[4,0.60],[5,0.67],[6,0.73],[7,0.80],[8,0.87],[9,0.93],[10,1.00]];
-  const h = Math.min(Math.max(totalHours, 0), 10);
-  let M = 1.0;
-  for (let i = 0; i < table.length - 1; i++) {
-    if (h >= table[i][0] && h <= table[i+1][0]) {
-      const frac = (h - table[i][0]) / (table[i+1][0] - table[i][0]);
-      M = table[i][1] + frac * (table[i+1][1] - table[i][1]);
-      break;
-    }
-  }
-
-  return Math.min(100, Math.max(0, Math.round((Q + B) * M)));
-}
-
-function ratingToGrade(r) {
-  return r >= 90 ? 'A+' : r >= 80 ? 'A' : r >= 70 ? 'B+' : r >= 55 ? 'B' : r >= 40 ? 'C' : r >= 25 ? 'D' : 'F';
-}
-function ratingToVerdict(r) {
-  return r >= 90 ? 'Excellent' : r >= 80 ? 'Good' : r >= 70 ? 'Above Average' : r >= 55 ? 'Average' : r >= 40 ? 'Below Average' : r >= 25 ? 'Poor' : 'Critical';
-}
 
 // ─────────────────────────────────────────────────────────────────
 // POST /api/analyze-daily-log  — AI review of a single study session
@@ -500,7 +451,214 @@ When they do ask study questions, be concise, clear, and specific. Use bullet po
 });
 
 // ─────────────────────────────────────────────────────────────────
+// POST /api/parse-allen-result — extract test data from Allen screenshots
+// Accepts up to 5 images via multipart/form-data (field: "files")
+// ─────────────────────────────────────────────────────────────────
+app.post('/api/parse-allen-result', upload.array('files', 5), async (req, res) => {
+  const uploadedFiles = req.files || [];
+  try {
+    const apiKey = getVisionKey(req);
+    if (!apiKey) throw new Error('No vision API key provided');
+    if (!uploadedFiles.length) throw new Error('No screenshots uploaded');
+
+    // Build content array: text prompt + all images
+    const content = [
+      {
+        type: 'text',
+        text: `You are extracting JEE test result data from Allen Institute result screenshots.
+Look at ALL the screenshots carefully and extract EVERY number you can see.
+
+Return ONLY valid JSON in this exact format (no markdown, no extra text):
+{
+  "testName": "<test name from top e.g. MINOR TEST - Paper 1>",
+  "testDate": "<date in YYYY-MM-DD format>",
+  "testType": "<main or advanced>",
+  "totalScore": <number>,
+  "maxScore": <number e.g. 300>,
+  "overall": {
+    "correct": <number>,
+    "incorrect": <number>,
+    "unattempted": <number>,
+    "classAverage": <number or null>
+  },
+  "ranks": {
+    "centerRank": "<e.g. 227/763>",
+    "centerPercentile": "<e.g. 70.38>",
+    "campusRank": "<e.g. 68/197>",
+    "campusPercentile": "<e.g. 65.99>",
+    "batchRank": "<e.g. 18/56>",
+    "batchPercentile": "<e.g. 69.64>"
+  },
+  "subjects": {
+    "physics":   { "score": <number>, "correct": <number>, "incorrect": <number>, "unattempted": <number> },
+    "chemistry": { "score": <number>, "correct": <number>, "incorrect": <number>, "unattempted": <number> },
+    "mathematics": { "score": <number>, "correct": <number>, "incorrect": <number>, "unattempted": <number> }
+  },
+  "topics": [
+    { "subject": "<physics|chemistry|mathematics>", "name": "<topic name>", "score": <number>, "maxScore": <number>, "correct": <number>, "incorrect": <number>, "unattempted": <number> }
+  ],
+  "improvements": [
+    { "subject": "<physics|chemistry|mathematics>", "type": "<Easy Q missed|Medium Q errors|Hard Q missed>", "count": <number>, "gainableMarks": <number> }
+  ],
+  "weakAreas": "<comma-separated list of topics where incorrect > 0>",
+  "errorSummary": "<one paragraph describing the key mistakes visible in the screenshots>"
+}`
+      }
+    ];
+
+    // Add each screenshot as an image_url
+    for (const file of uploadedFiles) {
+      const fileData = fs.readFileSync(file.path);
+      const b64      = fileData.toString('base64');
+      const mime     = file.mimetype;
+      fs.unlinkSync(file.path);
+      content.push({
+        type: 'image_url',
+        image_url: { url: `data:${mime};base64,${b64}` }
+      });
+    }
+
+    const nimResponse = await nimFetch(apiKey, {
+      model: NIM_VISION_MODEL,
+      messages: [{ role: 'user', content }],
+      max_tokens:  2000,
+      temperature: 0.1,
+    });
+
+    const raw   = extractText(nimResponse).replace(/```json|```/g, '').trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('AI returned no valid JSON. Raw: ' + raw.slice(0, 300));
+    const json  = JSON.parse(match[0]);
+    res.json(json);
+
+  } catch (e) {
+    // Cleanup any leftover temp files
+    for (const file of uploadedFiles) {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+    }
+    console.error('[parse-allen-result] Error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+// POST /api/import-allen  — receives scraped text from bookmarklet
+// CORS open: runs from allen.in → localhost
+// ─────────────────────────────────────────────────────────────────
+const ALLEN_PENDING_PATH = path.join(__dirname, 'data', 'allen-import-pending.json');
+
+function allenCors(res) {
+  res.header('Access-Control-Allow-Origin',  '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+}
+
+app.options('/api/import-allen',         (req, res) => { allenCors(res); res.end(); });
+app.options('/api/import-allen/pending', (req, res) => { allenCors(res); res.end(); });
+
+app.post('/api/import-allen', async (req, res) => {
+  allenCors(res);
+  try {
+    const apiKey = getReasonKey(req) || DEFAULT_REASON_KEY;
+    if (!apiKey) throw new Error('No AI key configured on server. Add NVIDIA_REASON_KEY to .env');
+
+    const { url = '', allText = '' } = req.body;
+    if (!allText || allText.length < 30) throw new Error('No page text received — bookmarklet may not have collected any content');
+
+    // DEBUG: Save exactly what the bookmarklet saw so we can figure out why questions are missing
+    const dataDir = path.join(__dirname, 'data');
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+    fs.writeFileSync(path.join(dataDir, 'last_scrape.txt'), allText);
+
+    const prompt = `You are extracting JEE test result data from Allen Institute's Results page.
+Extract ONLY what you can clearly see. Do NOT guess or fabricate numbers.
+
+CRITICAL: The subject table has this column order:
+SUBJECT | SCORE | ✓Qs (CORRECT count) | ✗Qs (INCORRECT/WRONG count)
+The first number after score is CORRECT questions, the second is INCORRECT/WRONG questions.
+Example: "PHYSICS 64 17 4" means Physics scored 64, 17 correct, 4 wrong.
+
+Also look for:
+- Total score (e.g. "160" out of "300")
+- Class average
+- Center/Campus/Batch Rank with percentile
+- Overall Correct/Incorrect/Unattempted counts
+
+SCRAPED TEXT:
+${allText.slice(0, 30000)}
+
+Return ONLY valid JSON. Omit any key not clearly in the text.
+{
+  "testName": "<test name>",
+  "testDate": "<YYYY-MM-DD>",
+  "testType": "<main or advanced>",
+  "totalScore": <number>,
+  "maxScore": <number>,
+  "overall": { "correct": <n>, "incorrect": <n>, "unattempted": <n>, "classAverage": <n> },
+  "ranks": { "centerRank": "<rank/total>", "centerPercentile": <n>, "campusRank": "<rank/total>", "campusPercentile": <n>, "batchRank": "<rank/total>", "batchPercentile": <n> },
+  "subjects": {
+    "physics": { "score": <n>, "correct": <n>, "incorrect": <n> },
+    "chemistry": { "score": <n>, "correct": <n>, "incorrect": <n> },
+    "mathematics": { "score": <n>, "correct": <n>, "incorrect": <n> }
+  }
+}`;
+
+    const nimResponse = await nimFetch(apiKey, {
+      model: NIM_TEXT_MODEL,
+      messages: [
+        { role: 'system', content: 'You are a data extraction engine. Return only valid JSON. Omit keys if data is missing.' },
+        { role: 'user',   content: prompt }
+      ],
+      max_tokens:  1500,
+      temperature: 0.1,
+    });
+
+    const raw   = extractText(nimResponse).replace(/```json|```/g, '').trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('AI returned no parseable JSON. Raw: ' + raw.slice(0, 200));
+    
+    const parsed = JSON.parse(match[0]);
+    parsed._importedAt = new Date().toISOString();
+    parsed._sourceUrl  = url;
+
+    // Write directly — single scan, no merge needed
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+    fs.writeFileSync(ALLEN_PENDING_PATH, JSON.stringify(parsed, null, 2));
+
+    console.log(`[import-allen] Parsed & Merged. URL: ${url}`);
+    res.json({ ok: true });
+
+  } catch (e) {
+    console.error('[import-allen] Error:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET — check for pending import
+app.get('/api/import-allen/pending', (req, res) => {
+  allenCors(res);
+  try {
+    if (!fs.existsSync(ALLEN_PENDING_PATH)) return res.json({ pending: false });
+    const data = JSON.parse(fs.readFileSync(ALLEN_PENDING_PATH, 'utf-8'));
+    res.json({ pending: true, data });
+  } catch(e) {
+    res.json({ pending: false });
+  }
+});
+
+// DELETE — consume (clear) the pending import after user saves it
+app.delete('/api/import-allen/pending', (req, res) => {
+  allenCors(res);
+  try {
+    if (fs.existsSync(ALLEN_PENDING_PATH)) fs.unlinkSync(ALLEN_PENDING_PATH);
+    res.json({ ok: true });
+  } catch(e) { res.json({ ok: false }); }
+});
+
+// ─────────────────────────────────────────────────────────────────
 // POST /api/backup - Auto-save user local storage
+
+
 // ─────────────────────────────────────────────────────────────────
 app.post('/api/backup', (req, res) => {
   try {
@@ -518,11 +676,30 @@ app.post('/api/backup', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────
+// GET /api/backup - Serve the last auto-saved backup for restore
+// ─────────────────────────────────────────────────────────────────
+app.get('/api/backup', (req, res) => {
+  try {
+    const backupPath = path.join(__dirname, 'data', 'backup.json');
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ error: 'No backup file found on server.' });
+    }
+    const data = JSON.parse(fs.readFileSync(backupPath, 'utf-8'));
+    res.json(data);
+  } catch (e) {
+    console.error('Backup read error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log('\n╔════════════════════════════════════════════╗');
-  console.log('║   🚀 JEE TRACKER v2.0 — NVIDIA NIM        ║');
+  console.log('║   🚀 JEE TRACKER v3.0 — NVIDIA NIM        ║');
   console.log(`║   http://localhost:${PORT}                ║`);
   console.log('║   Vision:  Llama-3.2-90B-Vision           ║');
   console.log('║   Text:    Llama-3.3-70B-Instruct         ║');
+  console.log('║   Storage: IndexedDB + localStorage       ║');
   console.log('╚════════════════════════════════════════════╝\n');
 });
+

@@ -343,11 +343,319 @@ function getSyllabusCtx() {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
+// ── Past Test Modal ───────────────────────────────────────────────
+const PT_CAT_COLORS = { main:'var(--blue)', advanced:'var(--purple)', both:'var(--cyan)', school:'var(--amber)' };
+
+function selectPtCat(el) {
+  el.closest('#ptCategoryPicker').querySelectorAll('.cat-opt').forEach(o => {
+    o.style.borderColor = 'var(--border)';
+    o.style.background  = 'transparent';
+  });
+  const cat = el.dataset.cat;
+  const col = PT_CAT_COLORS[cat];
+  el.style.borderColor = col;
+  el.style.background  = col.replace('var(','rgba(').replace(')',',.12)');
+  document.getElementById('pt_cat').value = cat;
+  // show/hide score sections
+  document.getElementById('pt_scoreMain').style.display   = cat !== 'school' ? 'block' : 'none';
+  document.getElementById('pt_scoreSchool').style.display = cat === 'school' ? 'block' : 'none';
+}
+
+function calcPtMainTotal() {
+  const p = +(document.getElementById('pt_phy')?.value  || 0);
+  const c = +(document.getElementById('pt_chem')?.value || 0);
+  const m = +(document.getElementById('pt_math')?.value || 0);
+  const total = p + c + m;
+  const el = document.getElementById('pt_mainTotal');
+  if (el) {
+    el.textContent = `${total} / 300`;
+    el.style.color = total >= 200 ? 'var(--green)' : total >= 150 ? 'var(--amber)' : 'var(--red)';
+  }
+}
+
+function savePastTest() {
+  const name   = document.getElementById('pt_name').value.trim();
+  const date   = document.getElementById('pt_date').value;
+  const cat    = document.getElementById('pt_cat').value || 'main';
+  if (!name || !date) { toast('Fill in test name and date!', 'error'); return; }
+
+  // Read wrong counts
+  const wphy  = +(document.getElementById('pt_wphy')?.value || 0);
+  const wchem = +(document.getElementById('pt_wchem')?.value || 0);
+  const wmath = +(document.getElementById('pt_wmath')?.value || 0);
+
+  // Read scores based on category
+  let scoreObj = {}, totalScore = 0, maxScore = 300;
+  if (cat === 'school') {
+    totalScore = +(document.getElementById('pt_school')?.value || 0);
+    maxScore   = +(document.getElementById('pt_schoolmax')?.value || 300);
+    scoreObj   = { total: totalScore };
+  } else {
+    const p = +(document.getElementById('pt_phy')?.value || 0);
+    const c = +(document.getElementById('pt_chem')?.value || 0);
+    const m = +(document.getElementById('pt_math')?.value || 0);
+    totalScore = p + c + m;
+    maxScore   = 300;
+    scoreObj   = { phy: p, chem: c, math: m, total: totalScore };
+  }
+
+  // Read error notes fallback
+  const wrongs = document.getElementById('pt_wrongs')?.value.trim();
+
+  // Build notes with error report
+  const errorReport = [];
+  if (wphy)   errorReport.push(`Physics: ${wphy} wrong`);
+  if (wchem)  errorReport.push(`Chemistry: ${wchem} wrong`);
+  if (wmath)  errorReport.push(`Maths: ${wmath} wrong`);
+  if (wrongs) errorReport.push(`Details: ${wrongs}`);
+
+  const testId = uuid();
+  const test = {
+    id: testId, name, date,
+    maxScore, jeeCategory: cat, type: TEST_TYPE,
+    score: scoreObj, syllabus: null,
+    wrongCounts: { phy: wphy, chem: wchem, math: wmath },
+    wrongNotes: wrongs || null,
+    isPastEntry: true,
+  };
+
+  S.saveTest(TEST_TYPE, test);
+  
+  // Build mock score entry with extra Allen stats if available
+  const mockEntry = {
+    testId, score: totalScore, max: maxScore,
+    type: TEST_TYPE, testName: name, category: cat,
+    breakdown: scoreObj,
+    wrongCounts: { phy: wphy, chem: wchem, math: wmath },
+    wrongNotes: wrongs || null,
+    date,
+  };
+  
+  // Attach Allen stats if imported
+  if (window._pendingAllenStats) {
+    const d = window._pendingAllenStats;
+    if (d.overall) mockEntry.overall = d.overall;
+    if (d.ranks) mockEntry.ranks = d.ranks;
+    if (d.subjects) mockEntry.subjectDetails = d.subjects;
+    window._pendingAllenStats = null;
+  }
+  
+  S.addMockScore(mockEntry);
+
+  // Log detailed structured errors if present
+  if (_ptErrors && _ptErrors.length > 0) {
+    _ptErrors.forEach(err => {
+      if (!err.topic || !err.desc) return;
+      S.addError({
+        subject: err.subject || 'phy',
+        topic: err.topic,
+        desc: `[From ${name}] ${err.mistakeType ? `(${err.mistakeType}) ` : ''}${err.desc}`,
+        date,
+      });
+    });
+  } else if (wrongs) {
+    // Fallback: auto-log unstructured notes
+    S.addError({
+      subject: 'phy',  // generic
+      topic: `${name} (${date}) — Error Report`,
+      desc: `Wrong: ${errorReport.join(' | ')}\n\n${wrongs}`,
+      date,
+    });
+  }
+
+  // Reset form
+  ['pt_name','pt_phy','pt_chem','pt_math','pt_school','pt_wphy','pt_wchem','pt_wmath','pt_wrongs'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  _ptErrors = [];
+  renderPtErrors();
+  document.getElementById('pt_mainTotal').textContent = '0 / 300';
+
+  // Clear from server now that we've saved it
+  fetch('/api/import-allen/pending', { method: 'DELETE' }).catch(e => console.error(e));
+
+  closeModal('pastTestModal');
+  renderTests();
+  toast(`Past test "${name}" saved with results! ✅`, 'success');
+}
+
 // ── Init ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initApiStatus();
   renderTests();
   initChatbox('jeeChatbox', 'jee', getSyllabusCtx);
   document.getElementById('testDate').value = today();
+  // Default past test date to yesterday as a hint
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  document.getElementById('pt_date').value = yesterday.toISOString().split('T')[0];
   document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+  
+  setupAllenBookmarklet();
+  checkPendingImport();
 });
+
+// ── Allen Bookmarklet & Import ────────────────────────────────────
+function setupAllenBookmarklet() {
+  var host = window.location.origin;
+  var L = [
+    '(async function(){',
+    'if(window._jtScraping)return;',
+    'window._jtScraping=true;',
+    'var btn=document.createElement("div");',
+    'btn.style.cssText="position:fixed;top:20px;right:20px;background:#16d3ee;color:#000;padding:12px 24px;border-radius:8px;font-family:sans-serif;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,.3);";',
+    'btn.textContent="Grabbing page data...";',
+    'document.body.appendChild(btn);',
+    'function sleep(ms){return new Promise(function(r){setTimeout(r,ms)});}',
+    'try{',
+    'var allText=document.body.innerText;',
+    'btn.textContent="Sending to JEE Tracker...";',
+    'btn.style.background="#8b5cf6";',
+    'btn.style.color="#fff";',
+    'var res=await fetch("' + host + '/api/import-allen",{',
+    '  method:"POST",',
+    '  headers:{"Content-Type":"application/json"},',
+    '  body:JSON.stringify({url:location.href,allText:allText})',
+    '});',
+    'var data=await res.json();',
+    'if(data.ok){',
+    '  btn.textContent="Sent! Switch to JEE Tracker.";',
+    '  btn.style.background="#22c55e";',
+    '}else{',
+    '  throw new Error(data.error||"Server error");',
+    '}',
+    '}catch(e){',
+    '  btn.textContent="Error: "+e.message;',
+    '  btn.style.background="#ef4444";',
+    '  console.error(e);',
+    '}',
+    'setTimeout(function(){btn.remove();window._jtScraping=false;},4000);',
+    '})();'
+  ];
+  var href = 'javascript:' + encodeURIComponent(L.join(' '));
+  var el = document.getElementById('allenBookmarkletBtn');
+  if (el) el.href = href;
+}
+
+let _lastImportTime = null;
+
+async function checkPendingImport() {
+  try {
+    const res = await fetch('/api/import-allen/pending');
+    const json = await res.json();
+    if (json.pending && json.data) {
+      // Only load if it's a new or updated import
+      if (json.data._importedAt !== _lastImportTime) {
+        _lastImportTime = json.data._importedAt;
+        loadPendingImport(json.data);
+      }
+    }
+  } catch(e) { console.error('Failed to check pending import', e); }
+  
+  // Poll every 3 seconds while on this page
+  setTimeout(checkPendingImport, 3000);
+}
+
+// ── Dynamic Error List for Past Tests ─────────────────────────────
+let _ptErrors = [];
+
+function renderPtErrors() {
+  const container = document.getElementById('pt_error_list');
+  const txtArea = document.getElementById('pt_wrongs');
+  
+  if (!_ptErrors.length) {
+    container.innerHTML = '';
+    txtArea.style.display = 'block';
+    return;
+  }
+  
+  txtArea.style.display = 'none';
+  container.innerHTML = _ptErrors.map((err, i) => `
+    <div style="background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-sm);padding:10px;display:grid;grid-template-columns:100px 1fr 24px;gap:8px;align-items:start;">
+      <select class="form-input" style="padding:6px;font-size:.7rem;" onchange="updatePtError(${i}, 'subject', this.value)">
+        <option value="phy" ${err.subject==='phy'?'selected':''}>Physics</option>
+        <option value="chem" ${err.subject==='chem'?'selected':''}>Chemistry</option>
+        <option value="math" ${err.subject==='math'?'selected':''}>Maths</option>
+      </select>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;gap:6px;">
+          <input type="text" class="form-input" style="padding:6px;font-size:.75rem;" placeholder="Topic (e.g. Electrostatics)" value="${err.topic||''}" oninput="updatePtError(${i}, 'topic', this.value)">
+          <select class="form-input" style="padding:6px;font-size:.7rem;width:120px;" onchange="updatePtError(${i}, 'mistakeType', this.value)">
+            <option value="Calculation" ${err.mistakeType==='Calculation'?'selected':''}>Calculation</option>
+            <option value="Concept" ${err.mistakeType==='Concept'?'selected':''}>Concept</option>
+            <option value="Formula" ${err.mistakeType==='Formula'?'selected':''}>Formula</option>
+            <option value="Silly" ${err.mistakeType==='Silly'?'selected':''}>Silly Mistake</option>
+          </select>
+        </div>
+        <textarea class="form-textarea" style="padding:6px;font-size:.75rem;min-height:50px;" placeholder="AI Analysis or your notes..." oninput="updatePtError(${i}, 'desc', this.value)">${err.desc||''}</textarea>
+      </div>
+      <button class="btn-icon" style="color:var(--red);margin-top:4px;" onclick="removePtError(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function addPtError() {
+  _ptErrors.push({ subject: 'phy', topic: '', mistakeType: 'Concept', desc: '' });
+  renderPtErrors();
+}
+
+function updatePtError(idx, field, value) {
+  _ptErrors[idx][field] = value;
+}
+
+function removePtError(idx) {
+  _ptErrors.splice(idx, 1);
+  renderPtErrors();
+}
+
+function loadPendingImport(data) {
+  closeModal('allenImportModal');
+  openModal('pastTestModal');
+  
+  // Fill basic info
+  if (data.testName) document.getElementById('pt_name').value = data.testName;
+  if (data.testDate) document.getElementById('pt_date').value = data.testDate;
+  
+  // Category
+  const cat = (data.testType||'').toLowerCase().includes('adv') ? 'advanced' : 'main';
+  const opt = Array.from(document.querySelectorAll('#ptCategoryPicker .cat-opt')).find(el => el.dataset.cat === cat);
+  if (opt) selectPtCat(opt);
+  
+  // Fill subject scores
+  if (cat === 'main' && data.subjects) {
+    if (data.subjects.physics?.score != null) document.getElementById('pt_phy').value = data.subjects.physics.score;
+    if (data.subjects.chemistry?.score != null) document.getElementById('pt_chem').value = data.subjects.chemistry.score;
+    if (data.subjects.mathematics?.score != null) document.getElementById('pt_math').value = data.subjects.mathematics.score;
+    calcPtMainTotal();
+  }
+  
+  // Fill wrong counts
+  if (data.subjects) {
+    if (data.subjects.physics?.incorrect != null) document.getElementById('pt_wphy').value = data.subjects.physics.incorrect;
+    if (data.subjects.chemistry?.incorrect != null) document.getElementById('pt_wchem').value = data.subjects.chemistry.incorrect;
+    if (data.subjects.mathematics?.incorrect != null) document.getElementById('pt_wmath').value = data.subjects.mathematics.incorrect;
+  }
+  
+  // Build summary notes for the notes area
+  let notes = [];
+  if (data.overall?.correct != null) notes.push(`Correct: ${data.overall.correct} | Incorrect: ${data.overall.incorrect} | Unattempted: ${data.overall.unattempted}`);
+  if (data.overall?.classAverage != null) notes.push(`Class Average: ${data.overall.classAverage}`);
+  if (data.ranks?.centerRank) notes.push(`Center Rank: ${data.ranks.centerRank} (${data.ranks.centerPercentile}%ile)`);
+  if (data.ranks?.campusRank) notes.push(`Campus Rank: ${data.ranks.campusRank} (${data.ranks.campusPercentile}%ile)`);
+  if (data.ranks?.batchRank) notes.push(`Batch Rank: ${data.ranks.batchRank} (${data.ranks.batchPercentile}%ile)`);
+  if (data.subjects) {
+    const s = data.subjects;
+    if (s.physics) notes.push(`Physics: ${s.physics.correct||0}✓ ${s.physics.incorrect||0}✗ ${s.physics.unattempted||0}○`);
+    if (s.chemistry) notes.push(`Chemistry: ${s.chemistry.correct||0}✓ ${s.chemistry.incorrect||0}✗ ${s.chemistry.unattempted||0}○`);
+    if (s.mathematics) notes.push(`Mathematics: ${s.mathematics.correct||0}✓ ${s.mathematics.incorrect||0}✗ ${s.mathematics.unattempted||0}○`);
+  }
+  if (notes.length) document.getElementById('pt_wrongs').value = notes.join('\n');
+  
+  // Store extra stats so savePastTest can save them to analytics
+  window._pendingAllenStats = data;
+  
+  _ptErrors = [];
+  renderPtErrors();
+  
+  toast('Results imported! Review and save.', 'success');
+}

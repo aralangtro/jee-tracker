@@ -100,12 +100,18 @@ function initStats() {
   }
 
   const logs = S.getStudyLogs();
+  
+  let allTimeTotal = 0;
   const weekTotal = logs.filter(l => {
+    allTimeTotal += (l.total || 0);
     const d = new Date(l.date);
     const now = new Date();
     return (now - d) / 86400000 <= 7;
   }).reduce((s,l) => s + (l.total||0), 0);
+  
   document.getElementById('statWeekHours').textContent = weekTotal.toFixed(1) + 'h';
+  const elTotalHours = document.getElementById('statTotalHours');
+  if (elTotalHours) elTotalHours.textContent = allTimeTotal.toFixed(1) + 'h';
 
   // Streak
   let streak = 0;
@@ -144,10 +150,10 @@ function initSubjectProgress() {
   const oldSyl  = S.getSyllabus();
 
   // Status → readiness weight (out of 4, same scale as PCM pie charts)
-  const STATUS_W = { todo: 0, theory: 1, pyqs: 2.5, mastered: 4 };
+  const STATUS_W = { todo: 0, theory: 1, theory_pyq: 1.75, pyqs: 2.5, mastered: 4 };
   // Status → short label for pills
-  const STATUS_LABEL = { mastered: '✅ Mastered', pyqs: '📘 PYQs', theory: '📖 Theory', todo: '📋 Todo' };
-  const STATUS_COLOR = { mastered: 'var(--green)', pyqs: 'var(--blue)', theory: 'var(--amber)', todo: 'var(--muted)' };
+  const STATUS_LABEL = { mastered: '✅ Mastered', pyqs: '📘 PYQs', theory_pyq: '📙 Theory+PYQ', theory: '📖 Theory', todo: '📋 Todo' };
+  const STATUS_COLOR = { mastered: 'var(--green)', pyqs: 'var(--blue)', theory_pyq: 'var(--orange)', theory: 'var(--amber)', todo: 'var(--muted)' };
 
   const SUBJECTS = [
     { k: 'phy',  n: 'Physics',      c: 'var(--phy)',  icon: '⚡' },
@@ -164,7 +170,7 @@ function initSubjectProgress() {
       const chapters = JEE_SYLLABUS[s.k].chapters || [];
       const total    = chapters.length;
       let scoreSum   = 0;
-      let mastered   = 0, pyqs = 0, theory = 0, todo = 0;
+      let mastered   = 0, pyqs = 0, theory_pyq = 0, theory = 0, todo = 0;
 
       chapters.forEach(ch => {
         const d      = sylData[ch.id] || {};
@@ -172,6 +178,7 @@ function initSubjectProgress() {
         scoreSum += STATUS_W[status] || 0;
         if (status === 'mastered') mastered++;
         else if (status === 'pyqs') pyqs++;
+        else if (status === 'theory_pyq') theory_pyq++;
         else if (status === 'theory') theory++;
         else todo++;
       });
@@ -182,6 +189,7 @@ function initSubjectProgress() {
       const pills = [
         mastered ? `<span style="font-size:.62rem;padding:1px 6px;border-radius:20px;background:rgba(16,217,138,.15);color:var(--green);font-weight:700;">✅ ${mastered}</span>` : '',
         pyqs     ? `<span style="font-size:.62rem;padding:1px 6px;border-radius:20px;background:rgba(91,141,238,.15);color:var(--blue);font-weight:700;">📘 ${pyqs}</span>` : '',
+        theory_pyq ? `<span style="font-size:.62rem;padding:1px 6px;border-radius:20px;background:rgba(251,146,60,.15);color:var(--orange);font-weight:700;">📙 ${theory_pyq}</span>` : '',
         theory   ? `<span style="font-size:.62rem;padding:1px 6px;border-radius:20px;background:rgba(251,191,36,.15);color:var(--amber);font-weight:700;">📖 ${theory}</span>` : '',
         todo     ? `<span style="font-size:.62rem;padding:1px 6px;border-radius:20px;background:rgba(255,255,255,.07);color:var(--muted);font-weight:700;">📋 ${todo}</span>` : '',
       ].filter(Boolean).join(' ');
@@ -826,7 +834,7 @@ function initPCMPieCharts() {
     { k:'math', name:'Mathematics', short:'M', color:'#8b5cf6', css:'var(--math)' },
   ];
   // Status → readiness weight out of 4
-  const STATUS_SCORE = { todo:0, theory:1, pyqs:2.5, mastered:4 };
+  const STATUS_SCORE = { todo:0, theory:1, theory_pyq:1.75, pyqs:2.5, mastered:4 };
   const GRAY = 'rgba(255,255,255,0.07)';
 
   const metrics = PCM.map(sub => {
@@ -837,7 +845,7 @@ function initPCMPieCharts() {
     chapters.forEach(ch => {
       const d      = sylData[ch.id] || { status:'todo', topics:{} };
       const status = d.status || 'todo';
-      if (status === 'mastered') masteredChaps++;
+      if (status === 'mastered' || status === 'pyqs' || status === 'theory_pyq') masteredChaps++;
       scoreSum   += STATUS_SCORE[status] || 0;
       totalTopics += ch.topics.length;
       doneTopics  += Object.values(d.topics || {}).filter(Boolean).length;
@@ -920,7 +928,7 @@ function initPCMPieCharts() {
           <div style="font-size:.72rem;font-weight:700;color:${m.css};margin-bottom:2px;">${m.short} — ${m.name}</div>
           <div class="pcm-stat-sub">
             ${m.doneTopics}/${m.totalTopics} subtopics done<br>
-            ${m.masteredChaps}/${m.totalChaps} chapters mastered<br>
+            ${m.masteredChaps}/${m.totalChaps} chapters covered<br>
             ${m.readyPct}% ready · ${m.hrs.toFixed(1)}h studied
           </div>
         </div>`).join('')}

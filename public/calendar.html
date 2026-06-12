@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Calendar — JEE Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
 /* ── Calendar layout ────────────────────────────────────────────── */
@@ -132,11 +133,16 @@
     <div class="nav-section">Tests</div>
     <a href="/jee-tests.html" class="nav-link"><span class="icon">🎯</span><span>JEE Tests</span></a>
     <a href="/cbse-tests.html" class="nav-link"><span class="icon">📝</span><span>CBSE Tests</span></a>
+    <a href="/test-analytics.html" class="nav-link"><span class="icon">📈</span><span>Test Analytics</span></a>
     <div class="nav-section">Plan</div>
     <a href="/calendar.html" class="nav-link active"><span class="icon">📅</span><span>Calendar</span></a>
+    <a href="/revisions.html" class="nav-link nav-neon"><span class="icon">🔥</span><span>Revisions</span></a>
   </nav>
   <div class="sidebar-bottom">
     <button class="theme-toggle" id="themeToggleBtn" onclick="ThemeManager.toggle()">🌙 <span>Dark Mode</span></button>
+    <div class="api-badge" onclick="openSyncModal()" id="syncBadge">
+      <div class="api-dot"></div><span>☁️ Cloud Sync</span>
+    </div>
     <div class="api-badge" onclick="openApiModal()">
       <div class="api-dot" id="apiDot"></div><span id="apiLabel">API Key</span>
     </div>
@@ -244,8 +250,10 @@
 </div>
 
 <div class="toast-container"></div>
+<script src="assets/js/idb.js"></script>
 <script src="assets/js/storage.js"></script>
 <script src="assets/js/ai.js"></script>
+<script src="assets/js/sync.js"></script>
 <script src="assets/js/calendar.js"></script>
 </body>
 </html>

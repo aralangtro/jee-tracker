@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Revisions — JEE Tracker</title>
+<meta name="description" content="Your personal spaced repetition curriculum manager">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  /* Enhance the neon styling specifically for the revisions page if needed */
+  .revision-hero {
+    background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(22,211,238,0.05));
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: var(--radius);
+    padding: 30px;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+  }
+  .revision-hero::before {
+    content: '🔥';
+    position: absolute;
+    right: -20px;
+    top: -40px;
+    font-size: 10rem;
+    opacity: 0.05;
+    pointer-events: none;
+  }
+
+  /* Analytics button */
+  .analytics-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 18px; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(22,211,238,0.1));
+    border: 1px solid rgba(139,92,246,0.35);
+    color: var(--purple); font-size: .78rem; font-weight: 700;
+    cursor: pointer; transition: all .2s; font-family: inherit;
+  }
+  .analytics-btn:hover {
+    background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(22,211,238,0.15));
+    border-color: rgba(139,92,246,0.55);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(139,92,246,0.2);
+  }
+
+  /* Analytics Modal */
+  .ra-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    z-index: 1001; display: none; align-items: center; justify-content: center;
+  }
+  .ra-overlay.open { display: flex; animation: fadeIn .25s ease; }
+  .ra-modal {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 0;
+    width: 92%; max-width: 780px; max-height: 85vh;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .ra-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 28px 18px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(139,92,246,0.06), rgba(22,211,238,0.04));
+  }
+  .ra-header h2 {
+    font-size: 1.1rem; font-weight: 800; color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ra-close {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--card2); border: 1px solid var(--border);
+    color: var(--text2); font-size: 1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all .2s; font-family: inherit;
+  }
+  .ra-close:hover { background: rgba(240,82,82,0.15); color: var(--red); border-color: rgba(240,82,82,0.3); }
+  .ra-body {
+    padding: 20px 28px 24px;
+    overflow-y: auto; flex: 1;
+  }
+
+  /* Stats strip */
+  .ra-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    margin-bottom: 22px;
+  }
+  .ra-stat {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px;
+    text-align: center;
+  }
+  .ra-stat-val { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+  .ra-stat-label { font-size: .65rem; color: var(--muted); font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: .06em; }
+
+  /* Subject sections */
+  .ra-subject {
+    margin-bottom: 20px;
+  }
+  .ra-subject-header {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .82rem; font-weight: 800; margin-bottom: 10px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .ra-chapter-row {
+    display: grid; grid-template-columns: 1fr 90px 100px 80px 70px;
+    gap: 8px; align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: .76rem;
+    transition: background .15s;
+  }
+  .ra-chapter-row:hover { background: var(--card2); }
+  .ra-chapter-row:nth-child(even) { background: rgba(255,255,255,0.015); }
+  .ra-chapter-row:nth-child(even):hover { background: var(--card2); }
+  .ra-ch-name { font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ra-ch-priority {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 2px 10px; border-radius: 12px; font-size: .65rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .ra-pri-A { background: rgba(240,82,82,0.12); color: var(--red); }
+  .ra-pri-B { background: rgba(245,158,11,0.12); color: var(--amber); }
+  .ra-pri-C { background: rgba(91,141,238,0.12); color: var(--blue); }
+  .ra-ch-stage {
+    font-weight: 700; font-size: .65rem;
+  }
+  .ra-ch-status {
+    font-size: .63rem; font-weight: 700;
+  }
+  .ra-ch-reviews {
+    font-size: .65rem; color: var(--muted); font-weight: 600; text-align: center;
+  }
+  .ra-table-head {
+    display: grid; grid-template-columns: 1fr 90px 100px 80px 70px;
+    gap: 8px; padding: 6px 10px;
+    font-size: .6rem; font-weight: 800; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .08em;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+
+  /* SR reset button per chapter */
+  .sr-reset-btn {
+    padding: 4px 10px; border-radius: 6px;
+    background: rgba(240,82,82,0.1); border: 1px solid rgba(240,82,82,0.25);
+    color: var(--red); font-size: .65rem; font-weight: 700;
+    cursor: pointer; transition: all .2s; font-family: inherit;
+  }
+  .sr-reset-btn:hover {
+    background: rgba(240,82,82,0.2); border-color: rgba(240,82,82,0.45);
+  }
+
+  @media(max-width:700px) {
+    .ra-stats { grid-template-columns: repeat(2, 1fr); }
+    .ra-chapter-row { grid-template-columns: 1fr 70px 80px; }
+    .ra-chapter-row > :nth-child(4), .ra-chapter-row > :nth-child(5) { display: none; }
+    .ra-table-head { grid-template-columns: 1fr 70px 80px; }
+    .ra-table-head > :nth-child(4), .ra-table-head > :nth-child(5) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h2>⚡ JEE Tracker</h2>
+    <p>Your Prep Command Center</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="/" class="nav-link"><span class="icon">🏠</span><span>Dashboard</span></a>
+    <a href="/syllabus.html" class="nav-link"><span class="icon">📚</span><span>Syllabus</span></a>
+    <a href="/analytics.html" class="nav-link"><span class="icon">📊</span><span>Analytics</span></a>
+    <div class="nav-section">Tests</div>
+    <a href="/jee-tests.html" class="nav-link"><span class="icon">🎯</span><span>JEE Tests</span></a>
+    <a href="/cbse-tests.html" class="nav-link"><span class="icon">📝</span><span>CBSE Tests</span></a>
+    <a href="/test-analytics.html" class="nav-link"><span class="icon">📈</span><span>Test Analytics</span></a>
+    <div class="nav-section">Plan</div>
+    <a href="/calendar.html" class="nav-link"><span class="icon">📅</span><span>Calendar</span></a>
+    <a href="/revisions.html" class="nav-link nav-neon active"><span class="icon">🔥</span><span>Revisions</span></a>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="theme-toggle" id="themeToggleBtn" onclick="ThemeManager.toggle()">🌙 <span>Dark Mode</span></button>
+    <div class="api-badge" onclick="openSyncModal()" id="syncBadge">
+      <div class="api-dot"></div><span>☁️ Cloud Sync</span>
+    </div>
+    <div class="api-badge" onclick="openApiModal()">
+      <div class="api-dot" id="apiDot"></div><span id="apiLabel">API Key</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <h1>Active Revisions 🔥</h1>
+      <p>The Ebbinghaus Forgetting Curve — Spaced Repetition Engine</p>
+    </div>
+  </div>
+
+  <div class="revision-hero scroll-reveal">
+    <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:10px;color:var(--text);">Mastery takes persistence.</h2>
+    <p style="font-size:.9rem;color:var(--text2);line-height:1.6;max-width:800px;">
+      This engine automatically tracks the chapters you mark as "Theory Done" or "PYQs Done". 
+      It schedules them for optimal review intervals (Day 1, Day 3, Day 7, Day 14, Day 30, Day 60) 
+      to move them permanently into your long-term memory. <strong>Never forget what you've already learned.</strong>
+    </p>
+  </div>
+
+  <!-- Analytics & Reset Buttons -->
+  <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center;" class="scroll-reveal">
+    <button class="analytics-btn" onclick="openRevisionAnalytics()">📊 Revision Analytics</button>
+    <button class="sr-reset-btn" onclick="resetRevisions()" style="padding:8px 16px;font-size:.78rem;">🗑️ Reset All Revisions</button>
+  </div>
+
+  <!-- SPACED REPETITION WIDGET -->
+  <div class="card scroll-reveal" id="srWidget" style="margin-bottom:20px;display:none;border-color:rgba(139,92,246,0.3);box-shadow:0 0 20px rgba(139,92,246,0.05);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div class="card-title" style="margin-bottom:0;color:var(--purple);font-size:1.1rem;">📅 REVISE TODAY</div>
+      <span class="badge badge-purple" id="srCount" style="font-size:.9rem;padding:6px 14px;">0 due</span>
+    </div>
+    <div id="srChaptersList" style="display:flex;flex-direction:column;gap:12px;"></div>
+    <div id="srUpcoming" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);"></div>
+  </div>
+
+</main>
+
+<!-- REVISION ANALYTICS OVERLAY -->
+<div class="ra-overlay" id="raOverlay" onclick="if(event.target===this)closeRevisionAnalytics()">
+  <div class="ra-modal">
+    <div class="ra-header">
+      <h2>📊 Revision Analytics</h2>
+      <button class="ra-close" onclick="closeRevisionAnalytics()">✕</button>
+    </div>
+    <div class="ra-body" id="raBody">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+<script src="assets/js/idb.js"></script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/syllabus-data.js"></script>
+<script src="assets/js/sync.js"></script>
+<script src="assets/js/spaced-repetition.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    initApiStatus();
+    initSpacedRepetition();
+    if (typeof CloudSync !== 'undefined') CloudSync.updateSyncUI(CloudSync.isSignedIn());
+  });
+
+  function resetRevisions() {
+    if (confirm('Are you sure you want to completely reset your Spaced Repetition progress? This will reset all your revision levels to Day 1. (Your syllabus progress will NOT be deleted).')) {
+      localStorage.removeItem('jt_sr_data');
+      if (typeof IDB !== 'undefined' && IDB.isSupported()) {
+        IDB.remove('jt_sr_data').catch(() => {});
+      }
+      toast('Revision engine reset successfully! 🔄', 'success');
+      setTimeout(() => location.reload(), 1000);
+    }
+  }
+
+  /** Reset a single chapter back to Day 1 */
+  function resetSingleChapter(chapId) {
+    let chapName = chapId;
+    if (typeof JEE_SYLLABUS !== 'undefined') {
+      for (const sub of Object.values(JEE_SYLLABUS)) {
+        const found = sub.chapters?.find(c => c.id === chapId);
+        if (found) { chapName = found.name; break; }
+      }
+    }
+    if (!confirm(`Reset "${chapName}" back to Day 1? The revision schedule will start fresh from today.`)) return;
+    SpacedRepetition.resetChapter(chapId);
+    toast(`🔄 "${chapName}" reset to Day 1. Fresh start!`, 'success');
+    initSpacedRepetition();
+  }
+
+  /** Open Revision Analytics overlay */
+  function openRevisionAnalytics() {
+    const overlay = document.getElementById('raOverlay');
+    const body = document.getElementById('raBody');
+    overlay.classList.add('open');
+
+    const details = SpacedRepetition.getAllChapterDetails();
+    const stats = SpacedRepetition.getStats();
+
+    // Count overdue
+    let overdueCount = 0;
+    Object.values(details).flat().forEach(ch => { if (ch.isOverdue) overdueCount++; });
+
+    let html = '';
+
+    // Stats strip
+    html += `<div class="ra-stats">`;
+    html += `<div class="ra-stat"><div class="ra-stat-val" style="color:var(--blue);">${stats.total}</div><div class="ra-stat-label">Total Enrolled</div></div>`;
+    html += `<div class="ra-stat"><div class="ra-stat-val" style="color:var(--green);">${stats.retained}</div><div class="ra-stat-label">✅ Retained</div></div>`;
+    html += `<div class="ra-stat"><div class="ra-stat-val" style="color:var(--amber);">${stats.active}</div><div class="ra-stat-label">Active</div></div>`;
+    html += `<div class="ra-stat"><div class="ra-stat-val" style="color:var(--red);">${overdueCount}</div><div class="ra-stat-label">⚠️ Overdue</div></div>`;
+    html += `</div>`;
+
+    // Subject sections
+    const subMeta = {
+      phy: { name: 'Physics', icon: '⚡', color: 'var(--phy)' },
+      chem: { name: 'Chemistry', icon: '🧪', color: 'var(--chem)' },
+      math: { name: 'Mathematics', icon: '∑', color: 'var(--math)' },
+    };
+
+    ['phy', 'chem', 'math'].forEach(subKey => {
+      const chapters = details[subKey];
+      if (chapters.length === 0) return;
+      const m = subMeta[subKey];
+      const retainedInSub = chapters.filter(c => c.isRetained).length;
+      const overdueInSub = chapters.filter(c => c.isOverdue).length;
+
+      html += `<div class="ra-subject">`;
+      html += `<div class="ra-subject-header" style="color:${m.color};">
+        <span style="font-size:1.2rem;">${m.icon}</span> ${m.name}
+        <span style="margin-left:auto;font-size:.65rem;color:var(--muted);font-weight:600;">
+          ${chapters.length} chapters · ${retainedInSub} retained${overdueInSub > 0 ? ` · <span style="color:var(--red);">${overdueInSub} overdue</span>` : ''}
+        </span>
+      </div>`;
+
+      html += `<div class="ra-table-head">
+        <div>Chapter</div>
+        <div>Priority</div>
+        <div>Stage</div>
+        <div>Status</div>
+        <div style="text-align:center;">Reviews</div>
+      </div>`;
+
+      // Sort: overdue first, then by stage ascending
+      const sorted = [...chapters].sort((a, b) => {
+        if (a.isOverdue && !b.isOverdue) return -1;
+        if (!a.isOverdue && b.isOverdue) return 1;
+        return a.stage - b.stage;
+      });
+
+      sorted.forEach(ch => {
+        let statusText = '';
+        let statusColor = 'var(--muted)';
+        if (ch.isRetained) {
+          statusText = '✅ Retained';
+          statusColor = 'var(--green)';
+        } else if (ch.isOverdue) {
+          statusText = `🔴 ${Math.abs(ch.daysUntil)}d overdue`;
+          statusColor = 'var(--red)';
+        } else if (ch.isDueToday) {
+          statusText = '🟡 Due today';
+          statusColor = 'var(--amber)';
+        } else {
+          statusText = `in ${ch.daysUntil}d`;
+          statusColor = 'var(--muted)';
+        }
+
+        html += `<div class="ra-chapter-row">
+          <div class="ra-ch-name" title="${ch.chapName}">${ch.chapName}</div>
+          <div><span class="ra-ch-priority ra-pri-${ch.priority}">${ch.priority}</span></div>
+          <div class="ra-ch-stage" style="color:${ch.stageColor};">${ch.stageLabel}</div>
+          <div class="ra-ch-status" style="color:${statusColor};">${statusText}</div>
+          <div class="ra-ch-reviews">${ch.reviewCount}×</div>
+        </div>`;
+      });
+
+      html += `</div>`;
+    });
+
+    body.innerHTML = html;
+  }
+
+  function closeRevisionAnalytics() {
+    document.getElementById('raOverlay').classList.remove('open');
+  }
+</script>
+</body>
+</html>

@@ -192,6 +192,6 @@ const JEE_SYLLABUS = {
 
 const PRIORITY_COLORS = { A:'#ef4444', B:'#f59e0b', C:'#22d3ee', D:'#94a3b8' };
 const PRIORITY_LABELS = { A:'Priority A — Must Do', B:'Priority B — High Value', C:'Priority C — Moderate', D:'Priority D — Low Priority' };
-const STATUS_LEVELS   = ['todo','theory','pyqs','mastered'];
-const STATUS_LABELS   = { todo:'To Do', theory:'Theory', pyqs:'+ PYQs', mastered:'Mastered' };
-const STATUS_COLORS   = { todo:'var(--muted)', theory:'var(--amber)', pyqs:'var(--blue)', mastered:'var(--green)' };
+const STATUS_LEVELS   = ['todo','theory','theory_pyq','pyqs','mastered'];
+const STATUS_LABELS   = { todo:'To Do', theory:'Theory', theory_pyq:'Theory+PYQ', pyqs:'+ PYQs', mastered:'Mastered' };
+const STATUS_COLORS   = { todo:'var(--muted)', theory:'var(--amber)', theory_pyq:'var(--orange)', pyqs:'var(--blue)', mastered:'var(--green)' };
